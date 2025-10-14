@@ -59,7 +59,7 @@ services:
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
       - LOG_LEVEL=WARNING
     volumes:
-      - recordings_data_prod:/app/recordings
+      - recordings_data_prod:/app/backend/recordings
       - ./backend/logs:/app/logs
     depends_on:
       mongodb:
