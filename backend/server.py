@@ -138,22 +138,24 @@ class CameraRecorder:
         self.last_frame = None
         self.motion_detected_time = None
         
-    def build_rtsp_url(self):
-        """Build RTSP URL with authentication"""
-        rtsp_url = self.camera.rtsp_url
-        if self.camera.username and self.camera.password:
-            # Parse URL and inject credentials
-            if '://' in rtsp_url:
-                protocol, rest = rtsp_url.split('://', 1)
-                rtsp_url = f"{protocol}://{self.camera.username}:{self.camera.password}@{rest}"
+    def build_stream_url(self):
+        """Build stream URL with authentication"""
+        stream_url = self.camera.stream_url
         
-        # Add protocol option
-        if '?' in rtsp_url:
-            rtsp_url += f"&rtsp_transport={self.camera.protocol}"
-        else:
-            rtsp_url += f"?rtsp_transport={self.camera.protocol}"
+        # For RTSP, inject credentials if provided
+        if self.camera.stream_type == "rtsp":
+            if self.camera.username and self.camera.password:
+                if '://' in stream_url:
+                    protocol, rest = stream_url.split('://', 1)
+                    stream_url = f"{protocol}://{self.camera.username}:{self.camera.password}@{rest}"
+            
+            # Add protocol option
+            if '?' in stream_url:
+                stream_url += f"&rtsp_transport={self.camera.protocol}"
+            else:
+                stream_url += f"?rtsp_transport={self.camera.protocol}"
         
-        return rtsp_url
+        return stream_url
     
     def start(self):
         """Start recording thread"""
@@ -170,94 +172,291 @@ class CameraRecorder:
         if self.recording_thread:
             self.recording_thread.join(timeout=5)
     
+    def _get_http_mjpeg_frame(self, stream):
+        """Extract frame from MJPEG stream"""
+        bytes_data = bytes()
+        for chunk in stream.iter_content(chunk_size=1024):
+            bytes_data += chunk
+            a = bytes_data.find(b'\xff\xd8')  # JPEG start
+            b = bytes_data.find(b'\xff\xd9')  # JPEG end
+            if a != -1 and b != -1:
+                jpg = bytes_data[a:b+2]
+                bytes_data = bytes_data[b+2:]
+                
+                # Decode JPEG to numpy array
+                img = Image.open(BytesIO(jpg))
+                frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+                return frame
+        return None
+    
+    def _get_http_snapshot(self, url, auth=None):
+        """Get single snapshot from HTTP URL"""
+        try:
+            response = requests.get(url, auth=auth, timeout=5)
+            if response.status_code == 200:
+                img = Image.open(BytesIO(response.content))
+                frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+                return frame
+        except Exception as e:
+            logger.error(f"Error getting HTTP snapshot: {str(e)}")
+        return None
+    
     def _record_loop(self):
         """Main recording loop"""
         while not self.stop_event.is_set():
             try:
-                rtsp_url = self.build_rtsp_url()
-                cap = cv2.VideoCapture(rtsp_url)
-                
-                if not cap.isOpened():
-                    logger.error(f"Failed to open RTSP stream for camera {self.camera.name}")
+                if self.camera.stream_type == "rtsp":
+                    self._record_rtsp()
+                elif self.camera.stream_type == "http-mjpeg":
+                    self._record_http_mjpeg()
+                elif self.camera.stream_type == "http-snapshot":
+                    self._record_http_snapshot()
+                else:
+                    logger.error(f"Unknown stream type: {self.camera.stream_type}")
                     time.sleep(5)
-                    continue
+                    
+            except Exception as e:
+                logger.error(f"Error in recording loop for camera {self.camera.name}: {str(e)}")
+                time.sleep(5)
+    
+    def _record_rtsp(self):
+        """Record from RTSP stream"""
+        stream_url = self.build_stream_url()
+        cap = cv2.VideoCapture(stream_url)
+        
+        if not cap.isOpened():
+            logger.error(f"Failed to open RTSP stream for camera {self.camera.name}")
+            time.sleep(5)
+            return
+        
+        self._process_frames(cap, source_type="rtsp")
+        cap.release()
+    
+    def _record_http_mjpeg(self):
+        """Record from HTTP MJPEG stream"""
+        stream_url = self.build_stream_url()
+        auth = None
+        if self.camera.username and self.camera.password:
+            auth = (self.camera.username, self.camera.password)
+        
+        try:
+            stream = requests.get(stream_url, auth=auth, stream=True, timeout=10)
+            
+            fps = 20  # Assume 20 fps for HTTP streams
+            width, height = None, None
+            
+            continuous_writer = None
+            motion_writer = None
+            frame_count = 0
+            
+            while not self.stop_event.is_set():
+                frame = self._get_http_mjpeg_frame(stream)
                 
-                fps = int(cap.get(cv2.CAP_PROP_FPS)) or 20
-                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                if frame is None:
+                    break
                 
-                continuous_writer = None
-                motion_writer = None
+                # Initialize dimensions on first frame
+                if width is None:
+                    height, width = frame.shape[:2]
+                    
+                    if self.camera.continuous_recording:
+                        continuous_file = self._create_recording_file("continuous")
+                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                        continuous_writer = cv2.VideoWriter(continuous_file, fourcc, fps, (width, height))
+                        self.current_recording = continuous_file
+                
+                # Continuous recording
+                if continuous_writer:
+                    continuous_writer.write(frame)
+                
+                # Motion detection
+                if self.camera.motion_detection:
+                    motion_detected = self._detect_motion(frame)
+                    
+                    if motion_detected:
+                        if not motion_writer:
+                            motion_file = self._create_recording_file("motion")
+                            motion_writer = cv2.VideoWriter(motion_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                            self.motion_detected_time = time.time()
+                            asyncio.run(self._save_motion_event(frame))
+                        
+                        if motion_writer:
+                            motion_writer.write(frame)
+                    else:
+                        if motion_writer and time.time() - self.motion_detected_time > 5:
+                            motion_writer.release()
+                            motion_writer = None
+                
+                frame_count += 1
+                
+                # Rotate continuous recording every 10 minutes
+                if continuous_writer and frame_count >= fps * 600:
+                    continuous_writer.release()
+                    asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
+                    
+                    continuous_file = self._create_recording_file("continuous")
+                    continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                    self.current_recording = continuous_file
+                    frame_count = 0
+            
+            # Cleanup
+            if continuous_writer:
+                continuous_writer.release()
+                asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
+            
+            if motion_writer:
+                motion_writer.release()
+            
+        except Exception as e:
+            logger.error(f"Error in HTTP MJPEG recording: {str(e)}")
+    
+    def _record_http_snapshot(self):
+        """Record from HTTP snapshot URL"""
+        stream_url = self.build_stream_url()
+        auth = None
+        if self.camera.username and self.camera.password:
+            auth = (self.camera.username, self.camera.password)
+        
+        fps = int(1.0 / self.camera.snapshot_interval)
+        width, height = None, None
+        
+        continuous_writer = None
+        motion_writer = None
+        frame_count = 0
+        
+        while not self.stop_event.is_set():
+            frame = self._get_http_snapshot(stream_url, auth)
+            
+            if frame is None:
+                time.sleep(self.camera.snapshot_interval)
+                continue
+            
+            # Initialize dimensions on first frame
+            if width is None:
+                height, width = frame.shape[:2]
                 
                 if self.camera.continuous_recording:
                     continuous_file = self._create_recording_file("continuous")
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     continuous_writer = cv2.VideoWriter(continuous_file, fourcc, fps, (width, height))
                     self.current_recording = continuous_file
+            
+            # Continuous recording
+            if continuous_writer:
+                continuous_writer.write(frame)
+            
+            # Motion detection
+            if self.camera.motion_detection:
+                motion_detected = self._detect_motion(frame)
                 
+                if motion_detected:
+                    if not motion_writer:
+                        motion_file = self._create_recording_file("motion")
+                        motion_writer = cv2.VideoWriter(motion_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                        self.motion_detected_time = time.time()
+                        asyncio.run(self._save_motion_event(frame))
+                    
+                    if motion_writer:
+                        motion_writer.write(frame)
+                else:
+                    if motion_writer and time.time() - self.motion_detected_time > 5:
+                        motion_writer.release()
+                        motion_writer = None
+            
+            frame_count += 1
+            
+            # Rotate continuous recording every 10 minutes
+            if continuous_writer and frame_count >= fps * 600:
+                continuous_writer.release()
+                asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
+                
+                continuous_file = self._create_recording_file("continuous")
+                continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                self.current_recording = continuous_file
                 frame_count = 0
-                motion_frames_count = 0
+            
+            time.sleep(self.camera.snapshot_interval)
+        
+        # Cleanup
+        if continuous_writer:
+            continuous_writer.release()
+            asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
+        
+        if motion_writer:
+            motion_writer.release()
+    
+    def _process_frames(self, cap, source_type="rtsp"):
+        """Process frames from video capture (for RTSP)"""
+        fps = int(cap.get(cv2.CAP_PROP_FPS)) or 20
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        continuous_writer = None
+        motion_writer = None
+        
+        if self.camera.continuous_recording:
+            continuous_file = self._create_recording_file("continuous")
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            continuous_writer = cv2.VideoWriter(continuous_file, fourcc, fps, (width, height))
+            self.current_recording = continuous_file
+        
+        frame_count = 0
+        motion_frames_count = 0
+        
+        while not self.stop_event.is_set():
+            ret, frame = cap.read()
+            if not ret:
+                logger.warning(f"Failed to read frame from camera {self.camera.name}")
+                break
+            
+            # Continuous recording
+            if continuous_writer:
+                continuous_writer.write(frame)
+            
+            # Motion detection
+            if self.camera.motion_detection:
+                motion_detected = self._detect_motion(frame)
                 
-                while not self.stop_event.is_set():
-                    ret, frame = cap.read()
-                    if not ret:
-                        logger.warning(f"Failed to read frame from camera {self.camera.name}")
-                        break
+                if motion_detected:
+                    motion_frames_count += 1
                     
-                    # Continuous recording
-                    if continuous_writer:
-                        continuous_writer.write(frame)
-                    
-                    # Motion detection
-                    if self.camera.motion_detection:
-                        motion_detected = self._detect_motion(frame)
+                    # Start motion recording if not already recording
+                    if not motion_writer:
+                        motion_file = self._create_recording_file("motion")
+                        motion_writer = cv2.VideoWriter(motion_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                        self.motion_detected_time = time.time()
                         
-                        if motion_detected:
-                            motion_frames_count += 1
-                            
-                            # Start motion recording if not already recording
-                            if not motion_writer:
-                                motion_file = self._create_recording_file("motion")
-                                motion_writer = cv2.VideoWriter(motion_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-                                self.motion_detected_time = time.time()
-                                
-                                # Save motion event to DB
-                                asyncio.run(self._save_motion_event(frame))
-                            
-                            if motion_writer:
-                                motion_writer.write(frame)
-                        else:
-                            # Stop motion recording after 5 seconds of no motion
-                            if motion_writer and time.time() - self.motion_detected_time > 5:
-                                motion_writer.release()
-                                motion_writer = None
-                                motion_frames_count = 0
+                        # Save motion event to DB
+                        asyncio.run(self._save_motion_event(frame))
                     
-                    frame_count += 1
-                    
-                    # Rotate continuous recording every 10 minutes
-                    if continuous_writer and frame_count >= fps * 600:  # 10 minutes
-                        continuous_writer.release()
-                        asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
-                        
-                        continuous_file = self._create_recording_file("continuous")
-                        continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-                        self.current_recording = continuous_file
-                        frame_count = 0
+                    if motion_writer:
+                        motion_writer.write(frame)
+                else:
+                    # Stop motion recording after 5 seconds of no motion
+                    if motion_writer and time.time() - self.motion_detected_time > 5:
+                        motion_writer.release()
+                        motion_writer = None
+                        motion_frames_count = 0
+            
+            frame_count += 1
+            
+            # Rotate continuous recording every 10 minutes
+            if continuous_writer and frame_count >= fps * 600:  # 10 minutes
+                continuous_writer.release()
+                asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
                 
-                # Cleanup
-                if continuous_writer:
-                    continuous_writer.release()
-                    asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
-                
-                if motion_writer:
-                    motion_writer.release()
-                
-                cap.release()
-                
-            except Exception as e:
-                logger.error(f"Error in recording loop for camera {self.camera.name}: {str(e)}")
-                time.sleep(5)
+                continuous_file = self._create_recording_file("continuous")
+                continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                self.current_recording = continuous_file
+                frame_count = 0
+        
+        # Cleanup
+        if continuous_writer:
+            continuous_writer.release()
+            asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
+        
+        if motion_writer:
+            motion_writer.release()
     
     def _create_recording_file(self, recording_type: str) -> str:
         """Create a new recording file path"""
