@@ -23,6 +23,7 @@ import shutil
 import requests
 from PIL import Image
 from io import BytesIO
+from collections import deque
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
