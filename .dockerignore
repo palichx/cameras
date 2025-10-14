@@ -1,0 +1,16 @@
+.git
+.gitignore
+*.md
+README.md
+LICENSE
+.env
+.env.*
+*.log
+test_reports
+scripts
+tests
+__pycache__
+*.pyc
+node_modules
+build
+dist
