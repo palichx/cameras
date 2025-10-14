@@ -53,10 +53,12 @@ class Camera(BaseModel):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    rtsp_url: str
+    stream_url: str  # Can be RTSP or HTTP URL
+    stream_type: str = "rtsp"  # rtsp, http-mjpeg, http-snapshot
     username: Optional[str] = None
     password: Optional[str] = None
-    protocol: str = "tcp"  # tcp or udp
+    protocol: str = "tcp"  # tcp or udp (for RTSP only)
+    snapshot_interval: float = 1.0  # seconds (for http-snapshot only)
     continuous_recording: bool = True
     motion_detection: bool = True
     motion_sensitivity: float = 0.5  # 0.0 to 1.0
@@ -66,10 +68,12 @@ class Camera(BaseModel):
 
 class CameraCreate(BaseModel):
     name: str
-    rtsp_url: str
+    stream_url: str
+    stream_type: str = "rtsp"
     username: Optional[str] = None
     password: Optional[str] = None
     protocol: str = "tcp"
+    snapshot_interval: float = 1.0
     continuous_recording: bool = True
     motion_detection: bool = True
     motion_sensitivity: float = 0.5
@@ -77,10 +81,16 @@ class CameraCreate(BaseModel):
 
 class CameraUpdate(BaseModel):
     name: Optional[str] = None
-    rtsp_url: Optional[str] = None
+    stream_url: Optional[str] = None
+    stream_type: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
     protocol: Optional[str] = None
+    snapshot_interval: Optional[float] = None
+    continuous_recording: Optional[bool] = None
+    motion_detection: Optional[bool] = None
+    motion_sensitivity: Optional[float] = None
+    detection_zones: Optional[List[Dict[str, Any]]] = None
     continuous_recording: Optional[bool] = None
     motion_detection: Optional[bool] = None
     motion_sensitivity: Optional[float] = None
