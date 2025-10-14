@@ -347,7 +347,7 @@ class CameraRecorder:
             logger.error(f"Error in HTTP MJPEG recording: {str(e)}")
     
     def _record_http_snapshot(self):
-        """Record from HTTP snapshot URL"""
+        """Record from HTTP snapshot URL with pre/post recording"""
         stream_url = self.build_stream_url()
         auth = None
         if self.camera.username and self.camera.password:
@@ -356,9 +356,13 @@ class CameraRecorder:
         fps = int(1.0 / self.camera.snapshot_interval)
         width, height = None, None
         
+        pre_buffer_frames = int(fps * self.camera.pre_recording_seconds)
+        post_buffer_frames = int(fps * self.camera.post_recording_seconds)
+        cooldown_frames = int(fps * self.camera.motion_cooldown_seconds)
+        
         continuous_writer = None
-        motion_writer = None
         frame_count = 0
+        frames_since_motion = 0
         
         while not self.stop_event.is_set():
             frame = self._get_http_snapshot(stream_url, auth)
@@ -381,23 +385,41 @@ class CameraRecorder:
             if continuous_writer:
                 continuous_writer.write(frame)
             
-            # Motion detection
+            # Motion detection with pre/post recording
             if self.camera.motion_detection:
+                self.pre_record_buffer.append(frame.copy())
+                if len(self.pre_record_buffer) > pre_buffer_frames:
+                    self.pre_record_buffer.popleft()
+                
                 motion_detected = self._detect_motion(frame)
                 
                 if motion_detected:
-                    if not motion_writer:
-                        motion_file = self._create_recording_file("motion")
-                        motion_writer = cv2.VideoWriter(motion_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-                        self.motion_detected_time = time.time()
-                        asyncio.run(self._save_motion_event(frame))
+                    self.last_motion_time = time.time()
+                    frames_since_motion = 0
                     
-                    if motion_writer:
-                        motion_writer.write(frame)
+                    if self.motion_state == "idle":
+                        self._start_motion_recording(fps, width, height)
+                        for buffered_frame in self.pre_record_buffer:
+                            if self.motion_writer:
+                                self.motion_writer.write(buffered_frame)
+                        asyncio.run(self._save_motion_event(frame))
+                        self.motion_state = "recording"
+                    
+                    if self.motion_writer and self.motion_state == "recording":
+                        self.motion_writer.write(frame)
                 else:
-                    if motion_writer and time.time() - self.motion_detected_time > 5:
-                        motion_writer.release()
-                        motion_writer = None
+                    frames_since_motion += 1
+                    
+                    if self.motion_state == "recording":
+                        if frames_since_motion <= post_buffer_frames:
+                            if self.motion_writer:
+                                self.motion_writer.write(frame)
+                        else:
+                            self._stop_motion_recording()
+                            self.motion_state = "cooldown"
+                    elif self.motion_state == "cooldown":
+                        if frames_since_motion > cooldown_frames:
+                            self.motion_state = "idle"
             
             frame_count += 1
             
@@ -418,8 +440,8 @@ class CameraRecorder:
             continuous_writer.release()
             asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
         
-        if motion_writer:
-            motion_writer.release()
+        if self.motion_writer:
+            self._stop_motion_recording()
     
     def _process_frames(self, cap, source_type="rtsp"):
         """Process frames from video capture with pre/post recording buffer"""
