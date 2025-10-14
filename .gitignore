@@ -147,3 +147,7 @@ mongodb_config/
 !Makefile
 !nginx.conf
 !*.md
+-e 
+# Environment files
+*.env
+*.env.*
