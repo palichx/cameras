@@ -216,10 +216,12 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
   const isEdit = !!camera;
   const [formData, setFormData] = useState({
     name: camera?.name || '',
-    rtsp_url: camera?.rtsp_url || '',
+    stream_url: camera?.stream_url || camera?.rtsp_url || '',
+    stream_type: camera?.stream_type || 'rtsp',
     username: camera?.username || '',
     password: camera?.password || '',
     protocol: camera?.protocol || 'tcp',
+    snapshot_interval: camera?.snapshot_interval || 1.0,
     continuous_recording: camera?.continuous_recording ?? true,
     motion_detection: camera?.motion_detection ?? true,
     motion_sensitivity: camera?.motion_sensitivity ?? 0.5,
