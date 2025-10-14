@@ -828,7 +828,7 @@ async def get_recordings(camera_id: Optional[str] = None, recording_type: Option
     return recordings
 
 @api_router.get("/recordings/{recording_id}")
-async def get_recording_file(recording_id: str):
+async def get_recording_file(recording_id: str, request: Request):
     recording = await db.recordings.find_one({"id": recording_id}, {"_id": 0})
     
     if not recording:
@@ -839,6 +839,44 @@ async def get_recording_file(recording_id: str):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Recording file not found")
     
+    # Get file size
+    file_size = os.path.getsize(file_path)
+    
+    # Check for Range header (for video streaming)
+    range_header = request.headers.get("range")
+    
+    if range_header:
+        # Parse range header
+        range_match = range_header.replace("bytes=", "").split("-")
+        start = int(range_match[0]) if range_match[0] else 0
+        end = int(range_match[1]) if range_match[1] else file_size - 1
+        
+        # Ensure end doesn't exceed file size
+        end = min(end, file_size - 1)
+        chunk_size = end - start + 1
+        
+        # Stream the requested range
+        def iterfile():
+            with open(file_path, "rb") as f:
+                f.seek(start)
+                remaining = chunk_size
+                while remaining > 0:
+                    chunk = f.read(min(8192, remaining))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                    yield chunk
+        
+        headers = {
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(chunk_size),
+            "Content-Type": "video/mp4",
+        }
+        
+        return StreamingResponse(iterfile(), status_code=206, headers=headers)
+    
+    # No range requested, return full file
     return FileResponse(file_path, media_type="video/mp4", filename=os.path.basename(file_path))
 
 @api_router.delete("/recordings/{recording_id}")
