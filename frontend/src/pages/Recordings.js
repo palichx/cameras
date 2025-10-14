@@ -241,6 +241,76 @@ const Recordings = () => {
           ))}
         </div>
       )}
+
+      {/* Video Player Dialog */}
+      <Dialog open={showPlayer} onOpenChange={handleClosePlayer}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div>
+                <span>{playingRecording?.camera_name}</span>
+                <Badge 
+                  variant="outline" 
+                  className="ml-3"
+                >
+                  {playingRecording?.recording_type === 'continuous' ? 'Непрерывная' : 'Движение'}
+                </Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClosePlayer}
+                className="h-8 w-8 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {playingRecording && (
+            <div className="space-y-4">
+              <div className="bg-black rounded-lg overflow-hidden">
+                <video
+                  key={playingRecording.id}
+                  controls
+                  autoPlay
+                  className="w-full"
+                  style={{ maxHeight: '70vh' }}
+                >
+                  <source 
+                    src={`${API}/recordings/${playingRecording.id}`} 
+                    type="video/mp4" 
+                  />
+                  Ваш браузер не поддерживает воспроизведение видео.
+                </video>
+              </div>
+              
+              <div className="flex items-center justify-between text-sm text-slate-600 px-2">
+                <div className="space-y-1">
+                  <div>📅 {formatDate(playingRecording.start_time)}</div>
+                  <div>⏱️ Длительность: {formatDuration(playingRecording.duration)}</div>
+                </div>
+                <div className="space-y-1 text-right">
+                  <div>💾 Размер: {formatFileSize(playingRecording.file_size)}</div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(
+                      playingRecording.id,
+                      playingRecording.camera_name,
+                      playingRecording.start_time
+                    )}
+                    className="mt-1"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Скачать
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
