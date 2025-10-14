@@ -311,18 +311,32 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
 
           <div>
             <Label htmlFor="protocol">Протокол</Label>
-            <Select
-              value={formData.protocol}
-              onValueChange={(value) => setFormData({ ...formData, protocol: value })}
-            >
-              <SelectTrigger data-testid="camera-protocol-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tcp">TCP</SelectItem>
-                <SelectItem value="udp">UDP</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="mt-2 flex space-x-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="protocol"
+                  value="tcp"
+                  checked={formData.protocol === 'tcp'}
+                  onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
+                  data-testid="camera-protocol-tcp"
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm text-slate-700">TCP</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="protocol"
+                  value="udp"
+                  checked={formData.protocol === 'udp'}
+                  onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
+                  data-testid="camera-protocol-udp"
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm text-slate-700">UDP</span>
+              </label>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
