@@ -114,9 +114,9 @@ const CameraManagement = () => {
           {cameras.map((camera) => (
             <Card key={camera.id} className="p-6 hover:shadow-lg transition-shadow" data-testid={`camera-item-${camera.id}`}>
               <div className="flex items-start justify-between mb-4">
-                <div>
+                <div className="flex-1 mr-4">
                   <h3 className="text-xl font-bold text-slate-800 mb-1">{camera.name}</h3>
-                  <p className="text-sm text-slate-600 break-all">{camera.rtsp_url}</p>
+                  <p className="text-sm text-slate-600 break-all">{camera.stream_url || camera.rtsp_url}</p>
                 </div>
                 <Badge
                   variant={camera.status === 'active' ? 'default' : 'secondary'}
