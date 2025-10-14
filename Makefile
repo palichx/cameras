@@ -13,6 +13,7 @@ help:
 	@echo ""
 	@echo "Production:"
 	@echo "  make build           - Build production images"
+	@echo "  make build-nc        - Build without cache (for troubleshooting)"
 	@echo "  make up              - Start production environment"
 	@echo "  make down            - Stop production environment"
 	@echo "  make restart         - Restart production environment"
@@ -26,6 +27,13 @@ help:
 	@echo "Maintenance:"
 	@echo "  make clean           - Remove containers, volumes, and images"
 	@echo "  make prune           - Remove unused Docker resources"
+	@echo "  make verify          - Verify Docker setup"
+	@echo ""
+	@echo "Troubleshooting:"
+	@echo "  make build-ubuntu    - Build using Ubuntu base image"
+	@echo "  make build-minimal   - Build minimal version"
+	@echo "  make shell-backend   - Open backend container shell"
+	@echo "  make shell-frontend  - Open frontend container shell"
 
 # Development commands
 dev-up:
@@ -46,7 +54,23 @@ dev-logs:
 # Production commands
 build:
 	@echo "Building production images..."
+	docker-compose build
+
+build-nc:
+	@echo "Building production images (no cache)..."
 	docker-compose build --no-cache
+
+build-ubuntu:
+	@echo "Building with Ubuntu base image..."
+	cd backend && cp Dockerfile Dockerfile.backup && cp Dockerfile.ubuntu Dockerfile && cd ..
+	docker-compose build backend
+	@echo "Build complete! Restore original Dockerfile if needed: cd backend && mv Dockerfile.backup Dockerfile"
+
+build-minimal:
+	@echo "Building minimal version..."
+	cd backend && cp Dockerfile Dockerfile.backup && cp Dockerfile.minimal Dockerfile && cd ..
+	docker-compose build backend
+	@echo "Build complete! Restore original Dockerfile if needed: cd backend && mv Dockerfile.backup Dockerfile"
 
 up:
 	@echo "Starting production environment..."
@@ -90,6 +114,10 @@ prune:
 	docker system prune -af --volumes
 	@echo "Prune complete!"
 
+verify:
+	@echo "Verifying Docker setup..."
+	@./verify-docker-setup.sh
+
 # Health checks
 health:
 	@echo "Checking service health..."
@@ -117,6 +145,27 @@ db-restore:
 	@read -p "Enter backup directory name: " backup && \
 	docker cp ./backups/$$backup videoguard-mongodb:/tmp/restore && \
 	docker exec videoguard-mongodb mongorestore --uri="mongodb://admin:admin123@localhost:27017" /tmp/restore
+
+# Troubleshooting
+shell-backend:
+	@echo "Opening backend container shell..."
+	docker exec -it videoguard-backend bash || docker exec -it videoguard-backend-dev bash
+
+shell-frontend:
+	@echo "Opening frontend container shell..."
+	docker exec -it videoguard-frontend sh || docker exec -it videoguard-frontend-dev sh
+
+shell-db:
+	@echo "Opening MongoDB container shell..."
+	docker exec -it videoguard-mongodb bash
+
+inspect-backend:
+	@echo "Inspecting backend image..."
+	docker run --rm videoguard-backend dpkg -l | grep -E 'libgl|opencv|ffmpeg'
+
+test-build:
+	@echo "Testing build with verbose output..."
+	docker-compose build --progress=plain 2>&1 | tee build.log
 
 # Quick commands
 quick-start: dev-up dev-logs
