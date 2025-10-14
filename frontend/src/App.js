@@ -9,8 +9,11 @@ import MotionEvents from './pages/MotionEvents';
 import { Toaster } from './components/ui/sonner';
 import { Video, Settings, FileVideo, Activity, BarChart3 } from 'lucide-react';
 
-// Use relative path - proxy will forward to backend
-export const API = '/api';
+// Try using window.location.origin to ensure same-origin requests
+const BACKEND_HOST = window.location.hostname === 'localhost' 
+  ? 'http://localhost:8001'
+  : window.location.origin;
+export const API = `${BACKEND_HOST}/api`;
 
 const Layout = ({ children }) => {
   const [storageStats, setStorageStats] = useState(null);
