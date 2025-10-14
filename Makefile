@@ -86,6 +86,17 @@ build-frontend-simple:
 	docker-compose build frontend
 	@echo "Build complete! Restore: cd frontend && mv Dockerfile.backup Dockerfile"
 
+build-frontend-flexible:
+	@echo "Building frontend with flexible lockfile..."
+	cd frontend && cp Dockerfile Dockerfile.backup && cp Dockerfile.flexible Dockerfile && cd ..
+	docker-compose build frontend
+	@echo "Build complete! Restore: cd frontend && mv Dockerfile.backup Dockerfile"
+
+update-yarn-lock:
+	@echo "Updating yarn.lock..."
+	cd frontend && yarn install
+	@echo "Don't forget to commit: git add frontend/yarn.lock && git commit -m 'Update yarn.lock'"
+
 up:
 	@echo "Starting production environment..."
 	docker-compose up -d
