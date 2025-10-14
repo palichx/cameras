@@ -129,9 +129,17 @@ const CameraManagement = () => {
 
               <div className="space-y-3 mb-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">Протокол:</span>
-                  <span className="font-medium text-slate-800">{camera.protocol.toUpperCase()}</span>
+                  <span className="text-slate-600">Тип:</span>
+                  <span className="font-medium text-slate-800">
+                    {camera.stream_type === 'rtsp' ? 'RTSP' : camera.stream_type === 'http-mjpeg' ? 'HTTP MJPEG' : 'HTTP Snapshot'}
+                  </span>
                 </div>
+                {camera.stream_type === 'rtsp' && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600">Протокол:</span>
+                    <span className="font-medium text-slate-800">{camera.protocol.toUpperCase()}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-600">Непрерывная запись:</span>
                   <span className="font-medium text-slate-800">{camera.continuous_recording ? 'Да' : 'Нет'}</span>
