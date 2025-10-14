@@ -9,18 +9,17 @@
 
 # Dependencies
 node_modules/
-/node_modules
 /.pnp
 .pnp.js
 
-# Yarn
-.yarn/cache
-.yarn/unplugged
+# Yarn - exclude cache but KEEP lock files
+.yarn/cache/
+.yarn/unplugged/
 .yarn/build-state.yml
 .yarn/install-state.gz
-# Keep yarn.lock and other important Yarn files
-!yarn.lock
-!.yarnrc.yml
+.yarn/versions/
+# IMPORTANT: yarn.lock should NOT be ignored
+# Do not add any rules that would ignore *.lock files
 
 # Testing
 /coverage
@@ -37,7 +36,7 @@ next-env.d.ts
 /dist
 dist/
 
-# Environment files
+# Environment files - keep example files
 .env
 .env.local
 .env.development.local
@@ -45,11 +44,6 @@ dist/
 .env.production.local
 *token.json*
 *credentials.json*
-# Keep example env files
-!.env.example
-!.env.*.example
-!backend/.env.docker.example
-!frontend/.env.docker.example
 
 # Logs and debug files
 npm-debug.log*
@@ -77,7 +71,6 @@ env/
 pip-log.txt
 pip-delete-this-directory.txt
 *.egg-info/
-dist/
 build/
 .pytest_cache/
 .mypy_cache/
@@ -101,12 +94,10 @@ agenthub/agents/youtube/db
 *.sqlite3
 
 # Recordings (large files)
-recordings/*.mp4
-recordings/*.avi
 recordings/**/*.mp4
 recordings/**/*.avi
 backend/recordings/
-backups/
+backups/**
 
 # Archive files and large assets
 **/*.zip
@@ -129,24 +120,11 @@ mongodb_data/
 mongodb_config/
 
 # OS specific
-.DS_Store
 .AppleDouble
 .LSOverride
 ._*
 .Spotlight-V100
 .Trashes
-
-# Keep important config files
-!package.json
-!package-lock.json
-!yarn.lock
-!requirements.txt
-!Dockerfile
-!docker-compose*.yml
-!.dockerignore
-!Makefile
-!nginx.conf
-!*.md
 -e 
 # Environment files
 *.env
