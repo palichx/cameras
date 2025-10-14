@@ -1,5 +1,5 @@
 # Build stage using npm instead of yarn
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
