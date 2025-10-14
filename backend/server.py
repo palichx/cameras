@@ -307,6 +307,10 @@ class CameraRecorder:
                             asyncio.run(self._save_motion_event(frame))
                             self.motion_state = "recording"
                         
+                        elif self.motion_state == "cooldown":
+                            self._start_motion_recording(fps, width, height)
+                            self.motion_state = "recording"
+                        
                         if self.motion_writer and self.motion_state == "recording":
                             self.motion_writer.write(frame)
                     else:
