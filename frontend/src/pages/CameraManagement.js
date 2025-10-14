@@ -366,35 +366,56 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="protocol">Протокол</Label>
-            <div className="mt-2 flex space-x-3">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="protocol"
-                  value="tcp"
-                  checked={formData.protocol === 'tcp'}
-                  onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
-                  data-testid="camera-protocol-tcp"
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-slate-700">TCP</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="protocol"
-                  value="udp"
-                  checked={formData.protocol === 'udp'}
-                  onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
-                  data-testid="camera-protocol-udp"
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-slate-700">UDP</span>
-              </label>
+          {formData.stream_type === 'rtsp' && (
+            <div>
+              <Label htmlFor="protocol">Протокол RTSP</Label>
+              <div className="mt-2 flex space-x-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="protocol"
+                    value="tcp"
+                    checked={formData.protocol === 'tcp'}
+                    onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
+                    data-testid="camera-protocol-tcp"
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm text-slate-700">TCP</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="protocol"
+                    value="udp"
+                    checked={formData.protocol === 'udp'}
+                    onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
+                    data-testid="camera-protocol-udp"
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm text-slate-700">UDP</span>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
+
+          {formData.stream_type === 'http-snapshot' && (
+            <div>
+              <Label htmlFor="snapshot_interval">Интервал снимков (секунды)</Label>
+              <Input
+                id="snapshot_interval"
+                data-testid="camera-snapshot-interval-input"
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="10"
+                value={formData.snapshot_interval}
+                onChange={(e) => setFormData({ ...formData, snapshot_interval: parseFloat(e.target.value) })}
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Как часто получать снимки с камеры (0.1 - 10 секунд)
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <Label htmlFor="continuous_recording">Непрерывная запись</Label>
