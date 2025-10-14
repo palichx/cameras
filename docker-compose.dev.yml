@@ -40,7 +40,7 @@ services:
 
   # Frontend (Development with hot reload)
   frontend:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: videoguard-frontend-dev
     restart: unless-stopped
     working_dir: /app
