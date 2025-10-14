@@ -93,10 +93,11 @@ agenthub/agents/youtube/db
 *.sqlite
 *.sqlite3
 
-# Recordings (large files)
-recordings/**/*.mp4
-recordings/**/*.avi
-backend/recordings/
+# Recordings (large files) - exclude files but keep directory structure
+backend/recordings/**/*.mp4
+backend/recordings/**/*.avi
+backend/recordings/**/*.mov
+!backend/recordings/.gitkeep
 backups/**
 
 # Archive files and large assets
