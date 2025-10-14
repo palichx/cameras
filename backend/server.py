@@ -400,22 +400,25 @@ class CameraRecorder:
             motion_writer.release()
     
     def _process_frames(self, cap, source_type="rtsp"):
-        """Process frames from video capture (for RTSP)"""
+        """Process frames from video capture with pre/post recording buffer"""
         fps = int(cap.get(cv2.CAP_PROP_FPS)) or 20
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
+        # Calculate buffer size for pre-recording
+        pre_buffer_frames = int(fps * self.camera.pre_recording_seconds)
+        post_buffer_frames = int(fps * self.camera.post_recording_seconds)
+        cooldown_frames = int(fps * self.camera.motion_cooldown_seconds)
+        
         continuous_writer = None
-        motion_writer = None
+        frame_count = 0
+        frames_since_motion = 0
         
         if self.camera.continuous_recording:
             continuous_file = self._create_recording_file("continuous")
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             continuous_writer = cv2.VideoWriter(continuous_file, fourcc, fps, (width, height))
             self.current_recording = continuous_file
-        
-        frame_count = 0
-        motion_frames_count = 0
         
         while not self.stop_event.is_set():
             ret, frame = cap.read()
@@ -427,35 +430,63 @@ class CameraRecorder:
             if continuous_writer:
                 continuous_writer.write(frame)
             
-            # Motion detection
+            # Motion detection with pre/post recording
             if self.camera.motion_detection:
+                # Add frame to pre-record buffer
+                self.pre_record_buffer.append(frame.copy())
+                if len(self.pre_record_buffer) > pre_buffer_frames:
+                    self.pre_record_buffer.popleft()
+                
+                # Detect motion
                 motion_detected = self._detect_motion(frame)
                 
                 if motion_detected:
-                    motion_frames_count += 1
+                    self.last_motion_time = time.time()
+                    frames_since_motion = 0
                     
-                    # Start motion recording if not already recording
-                    if not motion_writer:
-                        motion_file = self._create_recording_file("motion")
-                        motion_writer = cv2.VideoWriter(motion_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-                        self.motion_detected_time = time.time()
+                    # Start recording if not already
+                    if self.motion_state == "idle":
+                        self._start_motion_recording(fps, width, height)
+                        # Write pre-recorded frames
+                        for buffered_frame in self.pre_record_buffer:
+                            if self.motion_writer:
+                                self.motion_writer.write(buffered_frame)
+                        logger.info(f"Motion detected - wrote {len(self.pre_record_buffer)} pre-recorded frames")
                         
-                        # Save motion event to DB
+                        # Save motion event
                         asyncio.run(self._save_motion_event(frame))
+                        self.motion_state = "recording"
                     
-                    if motion_writer:
-                        motion_writer.write(frame)
+                    # Continue recording
+                    if self.motion_writer and self.motion_state == "recording":
+                        self.motion_writer.write(frame)
+                
                 else:
-                    # Stop motion recording after 5 seconds of no motion
-                    if motion_writer and time.time() - self.motion_detected_time > 5:
-                        motion_writer.release()
-                        motion_writer = None
-                        motion_frames_count = 0
+                    # No motion detected
+                    frames_since_motion += 1
+                    
+                    if self.motion_state == "recording":
+                        # Continue writing for post-recording period
+                        if frames_since_motion <= post_buffer_frames:
+                            if self.motion_writer:
+                                self.motion_writer.write(frame)
+                        else:
+                            # End recording and enter cooldown
+                            self._stop_motion_recording()
+                            self.motion_state = "cooldown"
+                            self.motion_end_time = time.time()
+                            logger.info(f"Motion ended - post-recording complete")
+                    
+                    elif self.motion_state == "cooldown":
+                        # Wait for cooldown period before accepting new motion
+                        if frames_since_motion > cooldown_frames:
+                            self.motion_state = "idle"
+                            logger.info("Cooldown complete - ready for new motion detection")
             
             frame_count += 1
             
             # Rotate continuous recording every 10 minutes
-            if continuous_writer and frame_count >= fps * 600:  # 10 minutes
+            if continuous_writer and frame_count >= fps * 600:
                 continuous_writer.release()
                 asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
                 
@@ -469,8 +500,8 @@ class CameraRecorder:
             continuous_writer.release()
             asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
         
-        if motion_writer:
-            motion_writer.release()
+        if self.motion_writer:
+            self._stop_motion_recording()
     
     def _create_recording_file(self, recording_type: str) -> str:
         """Create a new recording file path"""
