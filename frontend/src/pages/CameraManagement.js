@@ -233,6 +233,9 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
     continuous_recording: camera?.continuous_recording ?? true,
     motion_detection: camera?.motion_detection ?? true,
     motion_sensitivity: camera?.motion_sensitivity ?? 0.5,
+    pre_recording_seconds: camera?.pre_recording_seconds ?? 5.0,
+    post_recording_seconds: camera?.post_recording_seconds ?? 5.0,
+    motion_cooldown_seconds: camera?.motion_cooldown_seconds ?? 2.0,
   });
   const [saving, setSaving] = useState(false);
 
