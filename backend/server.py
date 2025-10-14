@@ -882,12 +882,13 @@ async def get_live_stream(camera_id: str):
 # Include the router in the main app
 app.include_router(api_router)
 
+# CORS Configuration - Allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,  # Must be False when using allow_origins=["*"]
+    allow_origins=["*"],  # Allow all origins
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Configure logging
