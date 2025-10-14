@@ -35,6 +35,7 @@ packaging==25.0
 pandas==2.3.3
 passlib==1.7.4
 pathspec==0.12.1
+pillow==11.3.0
 platformdirs==4.5.0
 pluggy==1.6.0
 psutil==7.1.0
