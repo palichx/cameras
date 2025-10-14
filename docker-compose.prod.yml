@@ -1,0 +1,139 @@
+version: '3.8'
+
+# Production deployment with SSL/HTTPS support
+# This compose file includes Nginx reverse proxy with Let's Encrypt SSL
+
+services:
+  # Nginx Reverse Proxy with SSL
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: videoguard-nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx-ssl.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - videoguard-network
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: videoguard-mongodb-prod
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data_prod:/data/db
+      - mongodb_config_prod:/data/configdb
+      - ./mongodb/mongod.conf:/etc/mongod.conf:ro
+    networks:
+      - videoguard-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Do not expose MongoDB port externally in production
+    # Only accessible within Docker network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: videoguard-backend-prod
+    restart: unless-stopped
+    environment:
+      - MONGO_URL=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017
+      - DB_NAME=${DB_NAME:-videoguard_production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://yourdomain.com}
+      - MAX_STORAGE_GB=${MAX_STORAGE_GB:-100}
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - LOG_LEVEL=WARNING
+    volumes:
+      - recordings_data_prod:/app/recordings
+      - ./backend/logs:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - videoguard-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_BACKEND_URL=https://${DOMAIN:-yourdomain.com}
+    container_name: videoguard-frontend-prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - videoguard-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Watchtower for automatic updates (optional)
+  watchtower:
+    image: containrrr/watchtower
+    container_name: videoguard-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=86400  # 24 hours
+      - WATCHTOWER_INCLUDE_STOPPED=false
+    networks:
+      - videoguard-network
+
+volumes:
+  mongodb_data_prod:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/videoguard/mongodb/data
+  mongodb_config_prod:
+    driver: local
+  recordings_data_prod:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/videoguard/recordings
+  nginx_logs:
+    driver: local
+
+networks:
+  videoguard-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
