@@ -276,15 +276,70 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
           </div>
 
           <div>
-            <Label htmlFor="rtsp_url">RTSP URL</Label>
+            <Label htmlFor="stream_type">Тип потока</Label>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <label className="flex items-center justify-center space-x-2 cursor-pointer border rounded-lg p-3 transition-colors hover:bg-slate-50" style={{ borderColor: formData.stream_type === 'rtsp' ? '#3b82f6' : '#e2e8f0', backgroundColor: formData.stream_type === 'rtsp' ? '#eff6ff' : 'white' }}>
+                <input
+                  type="radio"
+                  name="stream_type"
+                  value="rtsp"
+                  checked={formData.stream_type === 'rtsp'}
+                  onChange={(e) => setFormData({ ...formData, stream_type: e.target.value })}
+                  data-testid="stream-type-rtsp"
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-slate-700">RTSP</span>
+              </label>
+              <label className="flex items-center justify-center space-x-2 cursor-pointer border rounded-lg p-3 transition-colors hover:bg-slate-50" style={{ borderColor: formData.stream_type === 'http-mjpeg' ? '#3b82f6' : '#e2e8f0', backgroundColor: formData.stream_type === 'http-mjpeg' ? '#eff6ff' : 'white' }}>
+                <input
+                  type="radio"
+                  name="stream_type"
+                  value="http-mjpeg"
+                  checked={formData.stream_type === 'http-mjpeg'}
+                  onChange={(e) => setFormData({ ...formData, stream_type: e.target.value })}
+                  data-testid="stream-type-http-mjpeg"
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-slate-700">HTTP MJPEG</span>
+              </label>
+              <label className="flex items-center justify-center space-x-2 cursor-pointer border rounded-lg p-3 transition-colors hover:bg-slate-50" style={{ borderColor: formData.stream_type === 'http-snapshot' ? '#3b82f6' : '#e2e8f0', backgroundColor: formData.stream_type === 'http-snapshot' ? '#eff6ff' : 'white' }}>
+                <input
+                  type="radio"
+                  name="stream_type"
+                  value="http-snapshot"
+                  checked={formData.stream_type === 'http-snapshot'}
+                  onChange={(e) => setFormData({ ...formData, stream_type: e.target.value })}
+                  data-testid="stream-type-http-snapshot"
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-slate-700">HTTP Snapshot</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="stream_url">
+              {formData.stream_type === 'rtsp' ? 'RTSP URL' : 'HTTP URL'}
+            </Label>
             <Input
-              id="rtsp_url"
-              data-testid="camera-rtsp-input"
-              value={formData.rtsp_url}
-              onChange={(e) => setFormData({ ...formData, rtsp_url: e.target.value })}
-              placeholder="rtsp://192.168.1.100:554/stream"
+              id="stream_url"
+              data-testid="camera-stream-url-input"
+              value={formData.stream_url}
+              onChange={(e) => setFormData({ ...formData, stream_url: e.target.value })}
+              placeholder={
+                formData.stream_type === 'rtsp' 
+                  ? 'rtsp://192.168.1.100:554/stream'
+                  : formData.stream_type === 'http-mjpeg'
+                  ? 'http://192.168.1.100/mjpeg'
+                  : 'http://192.168.1.100/snapshot.jpg'
+              }
               required
             />
+            <p className="text-xs text-slate-500 mt-1">
+              {formData.stream_type === 'rtsp' && 'Пример: rtsp://192.168.1.100:554/stream1'}
+              {formData.stream_type === 'http-mjpeg' && 'Пример: http://192.168.1.100:8080/video'}
+              {formData.stream_type === 'http-snapshot' && 'Пример: http://192.168.1.100/cgi-bin/snapshot.cgi'}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
