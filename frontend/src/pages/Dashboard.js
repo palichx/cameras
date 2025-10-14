@@ -25,9 +25,9 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [camerasRes, recordingsRes, eventsRes] = await Promise.all([
-        axios.get(`${API}/cameras`),
-        axios.get(`${API}/recordings?limit=1000`),
-        axios.get(`${API}/motion-events?limit=1000`),
+        axios.get(`${API}/cameras`, { timeout: 10000 }),
+        axios.get(`${API}/recordings?limit=1000`, { timeout: 10000 }),
+        axios.get(`${API}/motion-events?limit=1000`, { timeout: 10000 }),
       ]);
 
       const camerasList = camerasRes.data;
