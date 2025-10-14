@@ -900,17 +900,50 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     """Start all active cameras on startup"""
-    cameras = await db.cameras.find({}, {"_id": 0}).to_list(1000)
+    # Migrate old cameras to new schema
+    cameras = await db.cameras.find({}).to_list(1000)
     
     for camera_doc in cameras:
+        needs_update = False
+        
+        # Migrate rtsp_url to stream_url
+        if 'rtsp_url' in camera_doc and 'stream_url' not in camera_doc:
+            camera_doc['stream_url'] = camera_doc['rtsp_url']
+            needs_update = True
+        
+        # Add stream_type if missing
+        if 'stream_type' not in camera_doc:
+            camera_doc['stream_type'] = 'rtsp'
+            needs_update = True
+        
+        # Add snapshot_interval if missing
+        if 'snapshot_interval' not in camera_doc:
+            camera_doc['snapshot_interval'] = 1.0
+            needs_update = True
+        
+        # Update database if needed
+        if needs_update:
+            await db.cameras.update_one(
+                {'id': camera_doc['id']},
+                {'$set': {
+                    'stream_url': camera_doc['stream_url'],
+                    'stream_type': camera_doc.get('stream_type', 'rtsp'),
+                    'snapshot_interval': camera_doc.get('snapshot_interval', 1.0)
+                }}
+            )
+        
+        # Start recorder
         if isinstance(camera_doc['created_at'], str):
             camera_doc['created_at'] = datetime.fromisoformat(camera_doc['created_at'])
         
-        camera = Camera(**camera_doc)
-        recorder = CameraRecorder(camera)
-        recorder.start()
-        active_recorders[camera.id] = recorder
-        logger.info(f"Started recorder for camera: {camera.name}")
+        try:
+            camera = Camera(**camera_doc)
+            recorder = CameraRecorder(camera)
+            recorder.start()
+            active_recorders[camera.id] = recorder
+            logger.info(f"Started recorder for camera: {camera.name}")
+        except Exception as e:
+            logger.error(f"Failed to start camera {camera_doc.get('name', 'unknown')}: {str(e)}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
