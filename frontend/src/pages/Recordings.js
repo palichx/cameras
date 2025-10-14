@@ -67,6 +67,16 @@ const Recordings = () => {
     }
   };
 
+  const handlePlay = (recording) => {
+    setPlayingRecording(recording);
+    setShowPlayer(true);
+  };
+
+  const handleClosePlayer = () => {
+    setShowPlayer(false);
+    setPlayingRecording(null);
+  };
+
   const handleDownload = async (recordingId, cameraName, startTime) => {
     try {
       const response = await axios.get(`${API}/recordings/${recordingId}`, {
