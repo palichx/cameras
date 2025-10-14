@@ -253,6 +253,11 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="camera-dialog">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Редактировать камеру' : 'Добавить камеру'}</DialogTitle>
+          <DialogDescription>
+            {isEdit 
+              ? 'Измените параметры камеры и сохраните изменения'
+              : 'Заполните форму для добавления новой RTSP камеры в систему'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
