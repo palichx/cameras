@@ -689,6 +689,12 @@ class CameraRecorder:
 async def root():
     return {"message": "Video Surveillance System API"}
 
+@api_router.get("/test-player")
+async def test_player():
+    from fastapi.responses import HTMLResponse
+    with open("/app/backend/test_video_player.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
 # Camera Management
 @api_router.post("/cameras", response_model=Camera)
 async def create_camera(camera_input: CameraCreate, background_tasks: BackgroundTasks):
