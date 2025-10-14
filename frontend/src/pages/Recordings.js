@@ -5,7 +5,8 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Download, Trash2, Play, FileVideo } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Download, Trash2, Play, FileVideo, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Recordings = () => {
@@ -14,6 +15,8 @@ const Recordings = () => {
   const [selectedCamera, setSelectedCamera] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [playingRecording, setPlayingRecording] = useState(null);
+  const [showPlayer, setShowPlayer] = useState(false);
 
   useEffect(() => {
     fetchCameras();
