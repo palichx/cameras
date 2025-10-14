@@ -125,3 +125,7 @@ mongodb_config/
 ._*
 .Spotlight-V100
 .Trashes
+-e 
+# Environment files
+*.env
+*.env.*
