@@ -20,6 +20,9 @@ import json
 from threading import Thread, Event
 import time
 import shutil
+import requests
+from PIL import Image
+from io import BytesIO
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
