@@ -1,5 +1,5 @@
 # Build stage - simplified version that copies everything first
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
