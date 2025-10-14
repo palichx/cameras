@@ -98,10 +98,9 @@ class CameraUpdate(BaseModel):
     motion_detection: Optional[bool] = None
     motion_sensitivity: Optional[float] = None
     detection_zones: Optional[List[Dict[str, Any]]] = None
-    continuous_recording: Optional[bool] = None
-    motion_detection: Optional[bool] = None
-    motion_sensitivity: Optional[float] = None
-    detection_zones: Optional[List[Dict[str, Any]]] = None
+    pre_recording_seconds: Optional[float] = None
+    post_recording_seconds: Optional[float] = None
+    motion_cooldown_seconds: Optional[float] = None
 
 class Recording(BaseModel):
     model_config = ConfigDict(extra="ignore")
