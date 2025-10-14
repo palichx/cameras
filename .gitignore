@@ -103,6 +103,9 @@ agenthub/agents/youtube/db
 # Recordings (large files)
 recordings/*.mp4
 recordings/*.avi
+recordings/**/*.mp4
+recordings/**/*.avi
+backend/recordings/
 backups/
 
 # Archive files and large assets
