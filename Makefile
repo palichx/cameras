@@ -32,6 +32,8 @@ help:
 	@echo "Troubleshooting:"
 	@echo "  make build-ubuntu    - Build using Ubuntu base image"
 	@echo "  make build-minimal   - Build minimal version"
+	@echo "  make build-frontend-npm    - Build frontend with npm"
+	@echo "  make build-frontend-simple - Build frontend (simplified)"
 	@echo "  make shell-backend   - Open backend container shell"
 	@echo "  make shell-frontend  - Open frontend container shell"
 
