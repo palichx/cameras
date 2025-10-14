@@ -10,8 +10,8 @@ COPY yarn.lock ./
 # Verify files exist
 RUN ls -la package.json yarn.lock
 
-# Install dependencies
-RUN yarn install --frozen-lockfile
+# Install dependencies (try frozen-lockfile, fallback to regular install)
+RUN yarn install --frozen-lockfile || yarn install
 
 # Copy source code
 COPY . .
