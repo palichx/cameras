@@ -9,8 +9,8 @@ COPY . .
 # Verify yarn.lock exists
 RUN ls -la yarn.lock || echo "yarn.lock not found!"
 
-# Install dependencies
-RUN yarn install --frozen-lockfile || yarn install
+# Install dependencies (flexible)
+RUN yarn install --frozen-lockfile 2>/dev/null || yarn install
 
 # Build the application
 RUN yarn build
