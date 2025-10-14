@@ -54,7 +54,7 @@ services:
     environment:
       - MONGO_URL=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017
       - DB_NAME=${DB_NAME:-videoguard_production}
-      - CORS_ORIGINS=${CORS_ORIGINS:-https://yourdomain.com}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - MAX_STORAGE_GB=${MAX_STORAGE_GB:-100}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
       - LOG_LEVEL=WARNING
