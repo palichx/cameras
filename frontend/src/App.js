@@ -9,8 +9,8 @@ import MotionEvents from './pages/MotionEvents';
 import { Toaster } from './components/ui/sonner';
 import { Video, Settings, FileVideo, Activity, BarChart3 } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-export const API = `${BACKEND_URL}/api`;
+// Use relative path - proxy will forward to backend
+export const API = '/api';
 
 const Layout = ({ children }) => {
   const [storageStats, setStorageStats] = useState(null);
