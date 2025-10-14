@@ -204,6 +204,15 @@ const Recordings = () => {
 
                 <div className="flex space-x-2">
                   <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handlePlay(recording)}
+                    data-testid={`play-recording-${recording.id}`}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Play className="w-4 h-4" />
+                  </Button>
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={() =>
