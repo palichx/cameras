@@ -501,7 +501,13 @@ class CameraRecorder:
                         asyncio.run(self._save_motion_event(frame))
                         self.motion_state = "recording"
                     
-                    # Continue recording
+                    elif self.motion_state == "cooldown":
+                        # Motion resumed during cooldown - restart recording
+                        self._start_motion_recording(fps, width, height)
+                        self.motion_state = "recording"
+                        logger.info("Motion resumed during cooldown - restarted recording")
+                    
+                    # Always write frame when motion detected and recording
                     if self.motion_writer and self.motion_state == "recording":
                         self.motion_writer.write(frame)
                 
