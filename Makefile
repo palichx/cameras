@@ -34,6 +34,8 @@ help:
 	@echo "  make build-minimal   - Build minimal version"
 	@echo "  make build-frontend-npm    - Build frontend with npm"
 	@echo "  make build-frontend-simple - Build frontend (simplified)"
+	@echo "  make build-frontend-flexible - Build frontend (flexible lockfile)"
+	@echo "  make update-yarn-lock      - Update yarn.lock file"
 	@echo "  make shell-backend   - Open backend container shell"
 	@echo "  make shell-frontend  - Open frontend container shell"
 
