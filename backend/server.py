@@ -818,23 +818,62 @@ async def get_live_stream(camera_id: str):
                 cam.created_at = datetime.fromisoformat(cam.created_at)
             
             recorder = CameraRecorder(cam)
-            rtsp_url = recorder.build_rtsp_url()
             
-            cap = cv2.VideoCapture(rtsp_url)
-            
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
+            # Handle different stream types
+            if cam.stream_type == "rtsp":
+                stream_url = recorder.build_stream_url()
+                cap = cv2.VideoCapture(stream_url)
                 
-                # Encode frame as JPEG
-                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
-                frame_bytes = buffer.tobytes()
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                    frame_bytes = buffer.tobytes()
+                    
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
                 
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                cap.release()
+                
+            elif cam.stream_type == "http-mjpeg":
+                stream_url = recorder.build_stream_url()
+                auth = None
+                if cam.username and cam.password:
+                    auth = (cam.username, cam.password)
+                
+                stream = requests.get(stream_url, auth=auth, stream=True, timeout=10)
+                
+                bytes_data = bytes()
+                for chunk in stream.iter_content(chunk_size=1024):
+                    bytes_data += chunk
+                    a = bytes_data.find(b'\xff\xd8')
+                    b = bytes_data.find(b'\xff\xd9')
+                    if a != -1 and b != -1:
+                        jpg = bytes_data[a:b+2]
+                        bytes_data = bytes_data[b+2:]
+                        
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n')
+                
+            elif cam.stream_type == "http-snapshot":
+                stream_url = recorder.build_stream_url()
+                auth = None
+                if cam.username and cam.password:
+                    auth = (cam.username, cam.password)
+                
+                while True:
+                    frame = recorder._get_http_snapshot(stream_url, auth)
+                    if frame is not None:
+                        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                        frame_bytes = buffer.tobytes()
+                        
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                    
+                    time.sleep(cam.snapshot_interval)
             
-            cap.release()
         except Exception as e:
             logger.error(f"Error streaming camera {camera_id}: {str(e)}")
     
