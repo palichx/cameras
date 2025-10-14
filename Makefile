@@ -72,6 +72,18 @@ build-minimal:
 	docker-compose build backend
 	@echo "Build complete! Restore original Dockerfile if needed: cd backend && mv Dockerfile.backup Dockerfile"
 
+build-frontend-npm:
+	@echo "Building frontend with npm instead of yarn..."
+	cd frontend && cp Dockerfile Dockerfile.backup && cp Dockerfile.npm Dockerfile && cd ..
+	docker-compose build frontend
+	@echo "Build complete! Restore: cd frontend && mv Dockerfile.backup Dockerfile"
+
+build-frontend-simple:
+	@echo "Building frontend with simplified Dockerfile..."
+	cd frontend && cp Dockerfile Dockerfile.backup && cp Dockerfile.simple Dockerfile && cd ..
+	docker-compose build frontend
+	@echo "Build complete! Restore: cd frontend && mv Dockerfile.backup Dockerfile"
+
 up:
 	@echo "Starting production environment..."
 	docker-compose up -d
