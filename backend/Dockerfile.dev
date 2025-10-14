@@ -23,7 +23,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create recordings directory
-RUN mkdir -p /app/recordings
+RUN mkdir -p /app/backend/recordings
 
 EXPOSE 8001
 
