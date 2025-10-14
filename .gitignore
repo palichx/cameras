@@ -3,21 +3,28 @@
 # IDE and editors
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 
 # Dependencies
 node_modules/
 /node_modules
 /.pnp
 .pnp.js
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
 .yarn/install-state.gz
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Keep yarn.lock and other important Yarn files
+!yarn.lock
+!.yarnrc.yml
 
 # Testing
 /coverage
+*.test.js.snap
 
 # Next.js
 /.next/
@@ -27,13 +34,22 @@ next-env.d.ts
 
 # Production builds
 /build
+/dist
 dist/
-dist
 
-# Environment files (comprehensive coverage)
-
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *token.json*
 *credentials.json*
+# Keep example env files
+!.env.example
+!.env.*.example
+!backend/.env.docker.example
+!frontend/.env.docker.example
 
 # Logs and debug files
 npm-debug.log*
@@ -41,28 +57,53 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 dump.rdb
+*.log
 
 # System files
 .DS_Store
 *.pem
+Thumbs.db
 
 # Python
 __pycache__/
-*pyc*
+*.py[cod]
+*$py.class
+*.so
+.Python
 venv/
 .venv/
+ENV/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Development tools
 chainlit.md
 .chainlit
 .ipynb_checkpoints/
 .ac
+*.ipynb
 
 # Deployment
 .vercel
+.netlify
 
 # Data and databases
 agenthub/agents/youtube/db
+*.db
+*.sqlite
+*.sqlite3
+
+# Recordings (large files)
+recordings/*.mp4
+recordings/*.avi
+backups/
 
 # Archive files and large assets
 **/*.zip
@@ -75,17 +116,31 @@ agenthub/agents/youtube/db
 
 # Build caches
 .cache/
+.parcel-cache/
 
 # Mobile development
-android-sdk/ -e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
+android-sdk/
+
+# Docker volumes (local development)
+mongodb_data/
+mongodb_config/
+
+# OS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Keep important config files
+!package.json
+!package-lock.json
+!yarn.lock
+!requirements.txt
+!Dockerfile
+!docker-compose*.yml
+!.dockerignore
+!Makefile
+!nginx.conf
+!*.md
