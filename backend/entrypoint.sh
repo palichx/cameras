@@ -10,6 +10,10 @@ while ! nc -z mongodb 27017; do
 done
 echo "MongoDB is ready!"
 
+# Create recordings directory if it doesn't exist
+mkdir -p /app/backend/recordings
+echo "Recordings directory ready"
+
 # Run database migrations if needed
 # python migrations.py
 
