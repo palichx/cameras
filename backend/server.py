@@ -141,9 +141,16 @@ class CameraRecorder:
         self.stop_event = Event()
         self.recording_thread = None
         self.current_recording = None
-        self.motion_recording = None
         self.last_frame = None
-        self.motion_detected_time = None
+        
+        # Motion detection with pre/post recording
+        self.pre_record_buffer = deque()  # Circular buffer for pre-recording
+        self.motion_writer = None
+        self.motion_file_path = None
+        self.motion_state = "idle"  # idle, recording, cooldown
+        self.last_motion_time = None
+        self.motion_start_time = None
+        self.motion_end_time = None
         
     def build_stream_url(self):
         """Build stream URL with authentication"""
