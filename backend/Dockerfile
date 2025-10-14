@@ -28,8 +28,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create recordings directory
-RUN mkdir -p /app/recordings
+# Create recordings directory with correct path
+RUN mkdir -p /app/backend/recordings
 
 # Expose port
 EXPOSE 8001
