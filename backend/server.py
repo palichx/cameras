@@ -589,12 +589,39 @@ class CameraRecorder:
         self.motion_writer.release()
         self.motion_writer = None
         
-        # Save recording metadata
+        # Save recording metadata and convert to H.264
         if self.motion_file_path and os.path.exists(self.motion_file_path):
+            # Convert to H.264 for browser compatibility
+            self._convert_to_h264(self.motion_file_path)
             asyncio.run(self._save_recording_metadata(self.motion_file_path, "motion"))
             logger.info(f"Stopped motion recording: {self.motion_file_path}")
         
         self.motion_file_path = None
+    
+    def _convert_to_h264(self, file_path: str):
+        """Convert video to H.264 codec for browser compatibility"""
+        try:
+            temp_path = file_path + ".tmp.mp4"
+            
+            # Use ffmpeg to convert to H.264
+            result = os.system(
+                f'ffmpeg -i "{file_path}" -c:v libx264 -preset fast -crf 23 '
+                f'-c:a aac -movflags +faststart "{temp_path}" -y '
+                f'> /dev/null 2>&1'
+            )
+            
+            if result == 0 and os.path.exists(temp_path):
+                # Replace original with converted
+                os.replace(temp_path, file_path)
+                logger.info(f"Converted video to H.264: {file_path}")
+            else:
+                logger.warning(f"Failed to convert video to H.264: {file_path}")
+                # Keep original mp4v file
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+        except Exception as e:
+            logger.error(f"Error converting video to H.264: {e}")
+            # Keep original file
     
     def _detect_motion(self, frame) -> bool:
         """Detect motion in frame using frame differencing"""
