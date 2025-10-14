@@ -512,6 +512,32 @@ class CameraRecorder:
         filename = f"{recording_type}_{timestamp}.mp4"
         return str(camera_dir / filename)
     
+    def _start_motion_recording(self, fps, width, height):
+        """Start motion recording with pre-buffer"""
+        if self.motion_writer:
+            return
+        
+        self.motion_file_path = self._create_recording_file("motion")
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.motion_writer = cv2.VideoWriter(self.motion_file_path, fourcc, fps, (width, height))
+        self.motion_start_time = time.time()
+        logger.info(f"Started motion recording: {self.motion_file_path}")
+    
+    def _stop_motion_recording(self):
+        """Stop motion recording and save metadata"""
+        if not self.motion_writer:
+            return
+        
+        self.motion_writer.release()
+        self.motion_writer = None
+        
+        # Save recording metadata
+        if self.motion_file_path and os.path.exists(self.motion_file_path):
+            asyncio.run(self._save_recording_metadata(self.motion_file_path, "motion"))
+            logger.info(f"Stopped motion recording: {self.motion_file_path}")
+        
+        self.motion_file_path = None
+    
     def _detect_motion(self, frame) -> bool:
         """Detect motion in frame using frame differencing"""
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
