@@ -281,6 +281,8 @@ make db-backup     # Backup БД
 - [⚡ Quick Start Guide](./QUICKSTART.md)
 - [🎥 HTTP Cameras Guide](./HTTP_CAMERAS_GUIDE.md)
 - [🛠️ Makefile Commands](./Makefile)
+- [🐛 Docker Troubleshooting](./DOCKER_TROUBLESHOOTING.md)
+- [📋 Git Configuration Guide](./GIT_GUIDE.md)
 
 ## 🤝 Вклад в проект
 
