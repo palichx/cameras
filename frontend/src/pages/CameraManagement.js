@@ -449,21 +449,76 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
           </div>
 
           {formData.motion_detection && (
-            <div>
-              <Label htmlFor="motion_sensitivity">
-                Чувствительность движения: {Math.round(formData.motion_sensitivity * 100)}%
-              </Label>
-              <Slider
-                id="motion_sensitivity"
-                data-testid="camera-sensitivity-slider"
-                value={[formData.motion_sensitivity]}
-                onValueChange={([value]) => setFormData({ ...formData, motion_sensitivity: value })}
-                min={0}
-                max={1}
-                step={0.1}
-                className="mt-2"
-              />
-            </div>
+            <>
+              <div>
+                <Label htmlFor="motion_sensitivity">
+                  Чувствительность движения: {Math.round(formData.motion_sensitivity * 100)}%
+                </Label>
+                <Slider
+                  id="motion_sensitivity"
+                  data-testid="camera-sensitivity-slider"
+                  value={[formData.motion_sensitivity]}
+                  onValueChange={([value]) => setFormData({ ...formData, motion_sensitivity: value })}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="pre_recording_seconds">Предзапись (сек)</Label>
+                  <Input
+                    id="pre_recording_seconds"
+                    data-testid="camera-pre-recording-input"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="30"
+                    value={formData.pre_recording_seconds}
+                    onChange={(e) => setFormData({ ...formData, pre_recording_seconds: parseFloat(e.target.value) })}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Буфер до движения
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="post_recording_seconds">Постзапись (сек)</Label>
+                  <Input
+                    id="post_recording_seconds"
+                    data-testid="camera-post-recording-input"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="60"
+                    value={formData.post_recording_seconds}
+                    onChange={(e) => setFormData({ ...formData, post_recording_seconds: parseFloat(e.target.value) })}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    После движения
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="motion_cooldown_seconds">Задержка (сек)</Label>
+                  <Input
+                    id="motion_cooldown_seconds"
+                    data-testid="camera-cooldown-input"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="10"
+                    value={formData.motion_cooldown_seconds}
+                    onChange={(e) => setFormData({ ...formData, motion_cooldown_seconds: parseFloat(e.target.value) })}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Между событиями
+                  </p>
+                </div>
+              </div>
+            </>
           )}
 
           <DialogFooter>
