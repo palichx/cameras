@@ -510,7 +510,16 @@ class CameraRecorder:
             # Rotate continuous recording every 10 minutes
             if continuous_writer and frame_count >= fps * 600:
                 continuous_writer.release()
-                self._convert_to_h264(self.current_recording)
+                
+                if self.enable_h264_conversion:
+                    import threading
+                    old_recording = self.current_recording
+                    threading.Thread(
+                        target=self._convert_to_h264_async,
+                        args=(old_recording,),
+                        daemon=True
+                    ).start()
+                
                 asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
                 
                 continuous_file = self._create_recording_file("continuous")
@@ -523,7 +532,15 @@ class CameraRecorder:
         # Cleanup
         if continuous_writer:
             continuous_writer.release()
-            self._convert_to_h264(self.current_recording)
+            
+            if self.enable_h264_conversion:
+                import threading
+                threading.Thread(
+                    target=self._convert_to_h264_async,
+                    args=(self.current_recording,),
+                    daemon=True
+                ).start()
+            
             asyncio.run(self._save_recording_metadata(self.current_recording, "continuous"))
         
         if self.motion_writer:
