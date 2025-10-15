@@ -1285,9 +1285,6 @@ async def get_live_stream(camera_id: str):
     
     return StreamingResponse(generate_frames(), media_type="multipart/x-mixed-replace; boundary=frame")
 
-# Include the router in the main app
-app.include_router(api_router)
-
 # Settings API
 @api_router.get("/settings", response_model=SystemSettings)
 async def get_settings():
@@ -1341,6 +1338,9 @@ async def test_telegram():
             return {"success": False, "message": f"Ошибка: {response.text}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка отправки: {str(e)}")
+
+# Include the router in the main app
+app.include_router(api_router)
 
 # CORS Configuration - Allow all origins
 app.add_middleware(
