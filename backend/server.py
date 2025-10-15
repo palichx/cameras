@@ -89,6 +89,8 @@ class CameraCreate(BaseModel):
     pre_recording_seconds: float = 5.0
     post_recording_seconds: float = 5.0
     motion_cooldown_seconds: float = 2.0
+    telegram_send_notification: bool = False
+    telegram_send_video: bool = False
 
 class CameraUpdate(BaseModel):
     name: Optional[str] = None
