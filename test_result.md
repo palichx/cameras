@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Add exclusion zones functionality to prevent false motion detection triggers. Currently, motion detector triggers on timestamp overlay that changes every second. Users need to draw exclusion zones (rectangles and polygons) on camera snapshot using mouse on canvas. Multiple zones can be excluded per camera."
+user_problem_statement: "Add minimum motion duration parameter to ignore brief motion events. Currently, short movements (birds, shadows, etc.) trigger false alarms. Add 'min_motion_duration' parameter (in seconds) to only trigger recording/notifications if motion lasts longer than specified duration. Default: 1 second, Max: 10 seconds."
 
 backend:
   - task: "Add excluded_zones field to Camera model"
