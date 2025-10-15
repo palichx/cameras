@@ -540,7 +540,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="telegram_send_video">Отправлять видео</Label>
-                      <p className="text-xs text-slate-500">Видео файл 640x480, 5 fps</p>
+                      <p className="text-xs text-slate-500">Видео 640x480, ускорено 5x</p>
                     </div>
                     <Switch
                       id="telegram_send_video"
