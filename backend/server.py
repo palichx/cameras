@@ -2084,110 +2084,89 @@ async def get_live_stream(camera_id: str):
     
     def generate_frames():
         try:
-            # If recorder exists and is running, tap into its stream
+            # If recorder exists and is running, use its cached frames
             if recorder and not recorder.stop_event.is_set():
-                logger.info(f"Using existing recorder for live stream: {camera_id}")
+                logger.info(f"✅ Using cached frames from active recorder: {camera_id}")
                 
-                # For RTSP/HTTP-MJPEG, create a separate light capture for streaming
-                # This avoids interference with recording
-                cam = Camera(**camera)
-                if isinstance(cam.created_at, str):
-                    cam.created_at = datetime.fromisoformat(cam.created_at)
+                last_frame_time = time.time()
+                no_frame_timeout = 10  # 10 seconds without frame = disconnect
                 
-                if cam.stream_type == "rtsp":
-                    stream_url = recorder.build_stream_url()
-                    # Use lower buffer to reduce latency
-                    cap = cv2.VideoCapture(stream_url)
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimal buffer for low latency
+                while not recorder.stop_event.is_set():
+                    # Get the last captured frame from recorder
+                    frame = recorder.last_frame
                     
-                    # Skip initial frames for faster start
-                    for _ in range(5):
-                        cap.read()
-                    
-                    while True:
-                        ret, frame = cap.read()
-                        if not ret:
-                            break
+                    if frame is not None:
+                        last_frame_time = time.time()
                         
-                        # Lower quality and resolution for streaming
-                        frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)  # Half resolution
-                        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 50])  # Lower quality
-                        frame_bytes = buffer.tobytes()
-                        
-                        yield (b'--frame\r\n'
-                               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                    
-                    cap.release()
-                    
-                elif cam.stream_type == "http-mjpeg":
-                    stream_url = recorder.build_stream_url()
-                    auth = None
-                    if cam.username and cam.password:
-                        auth = (cam.username, cam.password)
-                    
-                    stream = requests.get(stream_url, auth=auth, stream=True, timeout=10)
-                    
-                    bytes_data = bytes()
-                    for chunk in stream.iter_content(chunk_size=2048):  # Larger chunks
-                        bytes_data += chunk
-                        a = bytes_data.find(b'\xff\xd8')
-                        b = bytes_data.find(b'\xff\xd9')
-                        if a != -1 and b != -1:
-                            jpg = bytes_data[a:b+2]
-                            bytes_data = bytes_data[b+2:]
+                        # Resize and compress for streaming
+                        try:
+                            # Lower resolution for streaming
+                            stream_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR)
                             
-                            # Optionally resize to reduce bandwidth
-                            nparr = np.frombuffer(jpg, np.uint8)
-                            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                            if frame is not None:
-                                frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-                                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
-                                jpg = buffer.tobytes()
-                            
-                            yield (b'--frame\r\n'
-                                   b'Content-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n')
-                    
-                elif cam.stream_type == "http-snapshot":
-                    stream_url = recorder.build_stream_url()
-                    auth = None
-                    if cam.username and cam.password:
-                        auth = (cam.username, cam.password)
-                    
-                    while True:
-                        frame = recorder._get_http_snapshot(stream_url, auth)
-                        if frame is not None:
-                            # Resize for faster streaming
-                            frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-                            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                            # Compress with lower quality
+                            _, buffer = cv2.imencode('.jpg', stream_frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
                             frame_bytes = buffer.tobytes()
                             
                             yield (b'--frame\r\n'
                                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                        
-                        time.sleep(0.1)  # Fast refresh for live view
-            else:
-                # No active recorder - create temporary one
-                logger.info(f"Creating temporary stream for: {camera_id}")
-                cam = Camera(**camera)
-                if isinstance(cam.created_at, str):
-                    cam.created_at = datetime.fromisoformat(cam.created_at)
-                
-                temp_recorder = CameraRecorder(cam)
-                
-                if cam.stream_type == "rtsp":
-                    stream_url = temp_recorder.build_stream_url()
-                    cap = cv2.VideoCapture(stream_url)
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                        except Exception as e:
+                            logger.error(f"Error encoding frame: {e}")
+                            time.sleep(0.1)
+                            continue
                     
-                    # Skip initial frames
-                    for _ in range(5):
-                        cap.read()
+                    # Check for timeout
+                    if time.time() - last_frame_time > no_frame_timeout:
+                        logger.warning(f"No frames for {no_frame_timeout}s, stream ending")
+                        break
                     
-                    while True:
-                        ret, frame = cap.read()
-                        if not ret:
-                            break
-                        
+                    # Small delay to control stream rate (~10 FPS)
+                    time.sleep(0.1)
+                
+                logger.info(f"Stream ended for {camera_id}")
+                return
+            
+            # No active recorder - create temporary one (fallback)
+            logger.warning(f"No active recorder for {camera_id}, creating temporary stream")
+            cam = Camera(**camera)
+            if isinstance(cam.created_at, str):
+                cam.created_at = datetime.fromisoformat(cam.created_at)
+            
+            temp_recorder = CameraRecorder(cam)
+            
+            if cam.stream_type == "rtsp":
+                stream_url = temp_recorder.build_stream_url()
+                cap = cv2.VideoCapture(stream_url)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                
+                # Skip initial frames
+                for _ in range(5):
+                    cap.read()
+                
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                    frame_bytes = buffer.tobytes()
+                    
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                    
+                    time.sleep(0.05)  # ~20 FPS
+                
+                cap.release()
+                
+            elif cam.stream_type == "http-snapshot":
+                stream_url = temp_recorder.build_stream_url()
+                auth = None
+                if cam.username and cam.password:
+                    auth = (cam.username, cam.password)
+                
+                while True:
+                    frame = temp_recorder._get_http_snapshot(stream_url, auth)
+                    if frame is not None:
                         frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
                         _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
                         frame_bytes = buffer.tobytes()
@@ -2195,26 +2174,10 @@ async def get_live_stream(camera_id: str):
                         yield (b'--frame\r\n'
                                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
                     
-                    cap.release()
-                    
-                elif cam.stream_type == "http-snapshot":
-                    stream_url = temp_recorder.build_stream_url()
-                    auth = None
-                    if cam.username and cam.password:
-                        auth = (cam.username, cam.password)
-                    
-                    while True:
-                        frame = temp_recorder._get_http_snapshot(stream_url, auth)
-                        if frame is not None:
-                            frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-                            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
-                            frame_bytes = buffer.tobytes()
-                            
-                            yield (b'--frame\r\n'
-                                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                        
-                        time.sleep(0.1)
+                    time.sleep(0.1)
             
+        except GeneratorExit:
+            logger.info(f"Client disconnected from stream {camera_id}")
         except Exception as e:
             logger.error(f"Error streaming camera {camera_id}: {str(e)}")
     
@@ -2225,7 +2188,8 @@ async def get_live_stream(camera_id: str):
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Pragma": "no-cache",
             "Expires": "0",
-            "Connection": "keep-alive"
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # Disable nginx buffering
         }
     )
     
