@@ -138,18 +138,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Bulk delete recordings endpoint"
-    - "Delete recordings by date range endpoint"
-    - "Delete recordings by camera endpoint"
-    - "Frontend bulk operations with confirmation"
+    - "Reuse existing CameraRecorder for live streams"
+    - "Verify no duplicate camera connections when opening in new windows"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
     - agent: "main"
-      message: "Implemented mass management UI for Recordings.js with checkbox selection, bulk action buttons, date range picker, and confirmation dialogs. All three backend APIs are integrated. UI screenshot shows all features are rendering correctly. Ready for backend API testing to verify endpoints work correctly, then frontend e2e testing to verify full user flows."
-    - agent: "main"
-      message: "Completed implementation of mass management for Motion Events page (MotionEvents.js). Added identical functionality as Recordings: checkbox selection, bulk action buttons (Delete Selected, Delete by Date, Delete all from Camera), date range picker dialog, and confirmation dialogs. All three motion-events backend APIs are integrated. Frontend compiled successfully and UI rendering correctly with checkboxes on event cards."
-    - agent: "testing"
-      message: "✅ BACKEND TESTING COMPLETE: All three mass management APIs are working correctly. Tested bulk delete by IDs (3 recordings deleted successfully), delete by date range (with and without camera filter), and delete by camera (proper handling of empty results). APIs return correct response format, handle errors appropriately, and actually delete data from database. Created comprehensive test suite in mass_management_test.py. Ready for frontend testing or can be marked as complete."
+      message: "Backend optimization implemented to reuse existing CameraRecorder instances for live streams. The get_live_stream endpoint now checks active_recorders dict and uses cached frames (recorder.last_frame) instead of creating new cv2.VideoCapture connections. This should reduce CPU load when opening cameras in new windows. Backend service restarted successfully and running. Need to test: 1) Start camera recording, 2) Open live view in new window, 3) Verify logs show 'Using cached frames from active recorder' message, 4) Check CPU usage doesn't double with multiple windows."
