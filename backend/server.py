@@ -1066,7 +1066,7 @@ class CameraRecorder:
             logger.error(f"Error saving motion event: {str(e)}")
     
     def _save_recording_metadata_sync(self, file_path: str, recording_type: str):
-        """Save recording metadata (sync version for thread) - stores data for later DB save"""
+        """Save recording metadata (sync version for thread)"""
         try:
             if not os.path.exists(file_path):
                 return
@@ -1080,11 +1080,30 @@ class CameraRecorder:
             duration = frame_count / fps if fps > 0 else 0
             cap.release()
             
-            # Log for now - actual DB save happens in async context
-            logger.info(f"Recording completed: {file_path}, duration: {duration:.1f}s, size: {file_size} bytes")
+            # Save to MongoDB using sync client
+            from pymongo import MongoClient
+            mongo_url = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
+            sync_client = MongoClient(mongo_url)
+            sync_db = sync_client['video_surveillance']
+            
+            recording_doc = {
+                "id": str(uuid.uuid4()),
+                "camera_id": self.camera.id,
+                "camera_name": self.camera.name,
+                "start_time": datetime.now(timezone.utc).isoformat(),
+                "recording_type": recording_type,
+                "file_path": file_path,
+                "file_size": file_size,
+                "duration": duration
+            }
+            
+            sync_db.recordings.insert_one(recording_doc)
+            sync_client.close()
+            
+            logger.info(f"Recording saved to DB: {file_path}, duration: {duration:.1f}s, size: {file_size} bytes")
             
         except Exception as e:
-            logger.error(f"Error processing recording metadata: {str(e)}")
+            logger.error(f"Error saving recording metadata: {str(e)}")
 
 # API Endpoints
 @api_router.get("/")
