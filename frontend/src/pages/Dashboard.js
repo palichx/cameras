@@ -165,9 +165,12 @@ const StatCard = ({ icon, label, value, color, testId }) => {
   );
 };
 
-const CameraCard = ({ camera }) => {
+const CameraCard = ({ camera, status }) => {
   const [isLive, setIsLive] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
+
+  const isRecording = status?.is_recording || false;
+  const isMotionDetected = status?.is_motion_detected || false;
 
   const openInNewWindow = () => {
     const width = 1280;
