@@ -238,6 +238,13 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
     motion_cooldown_seconds: camera?.motion_cooldown_seconds ?? 2.0,
     telegram_send_notification: camera?.telegram_send_notification ?? false,
     telegram_send_video: camera?.telegram_send_video ?? false,
+    motion_algorithm: camera?.motion_algorithm ?? 'mog2',
+    min_object_area: camera?.min_object_area ?? 500,
+    blur_size: camera?.blur_size ?? 21,
+    motion_threshold: camera?.motion_threshold ?? 25,
+    mog2_history: camera?.mog2_history ?? 500,
+    mog2_var_threshold: camera?.mog2_var_threshold ?? 16,
+    detect_shadows: camera?.detect_shadows ?? true,
   });
   const [saving, setSaving] = useState(false);
 
