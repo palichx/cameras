@@ -351,6 +351,9 @@ def main():
         ("Storage Stats", tester.test_get_storage_stats),
         ("Storage Cleanup", tester.test_cleanup_storage),
         ("Live Stream", tester.test_live_stream_endpoint),
+        ("Bulk Delete Recordings", tester.test_bulk_delete_recordings),
+        ("Delete by Date Range", tester.test_delete_by_date_range),
+        ("Delete by Camera", tester.test_delete_by_camera),
         ("Invalid Endpoints", tester.test_invalid_endpoints),
         ("Delete Camera (Cleanup)", tester.test_delete_camera),
     ]
