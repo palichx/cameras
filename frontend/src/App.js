@@ -95,14 +95,13 @@ const Layout = ({ children }) => {
 };
 
 const NavLink = ({ to, icon, label }) => {
-  const navigate = useNavigate();
   const isActive = window.location.pathname === to;
 
   return (
-    <button
-      onClick={() => navigate(to)}
+    <Link
+      to={to}
       data-testid={`nav-${label.toLowerCase()}`}
-      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
+      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all no-underline ${
         isActive
           ? 'bg-blue-100 text-blue-700'
           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -110,7 +109,7 @@ const NavLink = ({ to, icon, label }) => {
     >
       {icon}
       <span>{label}</span>
-    </button>
+    </Link>
   );
 };
 
