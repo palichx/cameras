@@ -931,10 +931,12 @@ class CameraRecorder:
             temp_path = file_path + ".tmp.mp4"
             
             # Build scale filter
+            fps_filter = f",fps={target_fps}" if target_fps > 0 else ""
+            
             if max_resolution == 'original':
-                scale_filter = f"fps={target_fps}"
+                scale_filter = f"null{fps_filter}" if fps_filter else "null"
             else:
-                scale_filter = f"scale='min({max_width},iw)':'min({max_height},ih)':force_original_aspect_ratio=decrease,fps={target_fps}"
+                scale_filter = f"scale='min({max_width},iw)':'min({max_height},ih)':force_original_aspect_ratio=decrease{fps_filter}"
             
             # Build ffmpeg command
             result = os.system(
