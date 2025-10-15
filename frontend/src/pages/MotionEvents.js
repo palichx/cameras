@@ -315,11 +315,17 @@ const MotionEvents = () => {
           {events.map((event) => (
             <Card
               key={event.id}
-              className="overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
-              onClick={() => setSelectedEvent(event)}
+              className={`overflow-hidden transition-all ${
+                selectedEvents.includes(event.id) 
+                  ? 'ring-2 ring-blue-500' 
+                  : 'hover:shadow-xl'
+              }`}
               data-testid={`motion-event-${event.id}`}
             >
-              <div className="relative aspect-video bg-slate-900">
+              <div 
+                className="relative aspect-video bg-slate-900 cursor-pointer"
+                onClick={() => setSelectedEvent(event)}
+              >
                 {event.snapshot_path ? (
                   <img
                     src={`${API}/motion-events/${event.id}/snapshot`}
@@ -334,6 +340,15 @@ const MotionEvents = () => {
                     <ImageIcon className="w-12 h-12 text-slate-600" />
                   </div>
                 )}
+
+                <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedEvents.includes(event.id)}
+                    onCheckedChange={() => toggleSelectEvent(event.id)}
+                    className="bg-white border-2"
+                    data-testid={`checkbox-event-${event.id}`}
+                  />
+                </div>
 
                 <div className="absolute top-2 right-2">
                   <Badge className="bg-orange-500">
