@@ -1374,6 +1374,33 @@ async def stop_camera(camera_id: str):
     
     return {"message": "Camera stopped"}
 
+@api_router.get("/cameras/status/all")
+async def get_cameras_status():
+    """Get real-time status of all cameras including recording and motion detection state"""
+    cameras = await db.cameras.find({}, {"_id": 0}).to_list(1000)
+    
+    status_list = []
+    for cam in cameras:
+        camera_status = {
+            "id": cam['id'],
+            "name": cam['name'],
+            "is_active": cam['id'] in active_recorders,
+            "is_recording": False,
+            "is_motion_detected": False,
+            "motion_state": "idle"
+        }
+        
+        # Get recorder status if active
+        if cam['id'] in active_recorders:
+            recorder = active_recorders[cam['id']]
+            camera_status['is_recording'] = recorder.current_recording is not None or recorder.motion_writer is not None
+            camera_status['motion_state'] = recorder.motion_state
+            camera_status['is_motion_detected'] = recorder.motion_state in ['recording', 'cooldown']
+        
+        status_list.append(camera_status)
+    
+    return status_list
+
 # Recordings
 @api_router.get("/recordings", response_model=List[Recording])
 async def get_recordings(camera_id: Optional[str] = None, recording_type: Optional[str] = None, limit: int = 100):
