@@ -1586,6 +1586,120 @@ async def get_motion_snapshot(event_id: str):
     
     return FileResponse(snapshot_path, media_type="image/jpeg")
 
+@api_router.delete("/motion-events/{event_id}")
+async def delete_motion_event(event_id: str):
+    """Delete a single motion event"""
+    event = await db.motion_events.find_one({"id": event_id}, {"_id": 0})
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Motion event not found")
+    
+    # Delete snapshot file
+    snapshot_path = event.get('snapshot_path')
+    if snapshot_path and os.path.exists(snapshot_path):
+        os.remove(snapshot_path)
+    
+    await db.motion_events.delete_one({"id": event_id})
+    
+    return {"message": "Motion event deleted successfully"}
+
+@api_router.post("/motion-events/bulk-delete")
+async def bulk_delete_motion_events(request: Request):
+    """Delete multiple motion events at once"""
+    data = await request.json()
+    event_ids = data.get('ids', [])
+    
+    if not event_ids:
+        raise HTTPException(status_code=400, detail="No event IDs provided")
+    
+    deleted_count = 0
+    failed_count = 0
+    
+    for event_id in event_ids:
+        try:
+            event = await db.motion_events.find_one({"id": event_id}, {"_id": 0})
+            if event:
+                # Delete snapshot file
+                snapshot_path = event.get('snapshot_path')
+                if snapshot_path and os.path.exists(snapshot_path):
+                    os.remove(snapshot_path)
+                
+                await db.motion_events.delete_one({"id": event_id})
+                deleted_count += 1
+        except Exception as e:
+            logger.error(f"Error deleting motion event {event_id}: {e}")
+            failed_count += 1
+    
+    return {
+        "message": f"Deleted {deleted_count} motion events",
+        "deleted": deleted_count,
+        "failed": failed_count
+    }
+
+@api_router.post("/motion-events/delete-by-date")
+async def delete_motion_events_by_date(request: Request):
+    """Delete motion events by date range"""
+    data = await request.json()
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    camera_id = data.get('camera_id')
+    
+    if not start_date or not end_date:
+        raise HTTPException(status_code=400, detail="Start and end dates are required")
+    
+    # Build query
+    query = {
+        "timestamp": {
+            "$gte": start_date,
+            "$lte": end_date
+        }
+    }
+    
+    if camera_id:
+        query["camera_id"] = camera_id
+    
+    # Get all events in range
+    events = await db.motion_events.find(query, {"_id": 0}).to_list(None)
+    
+    deleted_count = 0
+    for event in events:
+        try:
+            snapshot_path = event.get('snapshot_path')
+            if snapshot_path and os.path.exists(snapshot_path):
+                os.remove(snapshot_path)
+            
+            await db.motion_events.delete_one({"id": event['id']})
+            deleted_count += 1
+        except Exception as e:
+            logger.error(f"Error deleting motion event: {e}")
+    
+    return {
+        "message": f"Deleted {deleted_count} motion events",
+        "deleted": deleted_count
+    }
+
+@api_router.post("/motion-events/delete-by-camera")
+async def delete_motion_events_by_camera(camera_id: str):
+    """Delete all motion events for a specific camera"""
+    events = await db.motion_events.find({"camera_id": camera_id}, {"_id": 0}).to_list(None)
+    
+    deleted_count = 0
+    for event in events:
+        try:
+            snapshot_path = event.get('snapshot_path')
+            if snapshot_path and os.path.exists(snapshot_path):
+                os.remove(snapshot_path)
+            
+            await db.motion_events.delete_one({"id": event['id']})
+            deleted_count += 1
+        except Exception as e:
+            logger.error(f"Error deleting motion event: {e}")
+    
+    return {
+        "message": f"Deleted {deleted_count} motion events for camera",
+        "deleted": deleted_count
+    }
+
 # Storage Management
 @api_router.get("/storage/stats", response_model=StorageStats)
 async def get_storage_stats():
