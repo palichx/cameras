@@ -929,6 +929,41 @@ class CameraRecorder:
             logger.error(f"Error converting to H.264: {e}")
             # Keep original file
     
+    def _create_telegram_video(self, source_video_path: str) -> str:
+        """Create low-quality video for Telegram (640x480, 1fps)"""
+        try:
+            telegram_video_path = source_video_path.replace('.mp4', '_telegram.mp4')
+            
+            # Use ffmpeg to create low-quality version
+            result = os.system(
+                f'ffmpeg -i "{source_video_path}" '
+                f'-vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,fps=1" '
+                f'-c:v libx264 -preset ultrafast -crf 35 '
+                f'-an '  # Remove audio
+                f'-movflags +faststart '
+                f'"{telegram_video_path}" -y '
+                f'> /dev/null 2>&1'
+            )
+            
+            if result == 0 and os.path.exists(telegram_video_path):
+                file_size_mb = os.path.getsize(telegram_video_path) / (1024 * 1024)
+                
+                # Check if file is under 50MB (Telegram limit)
+                if file_size_mb > 50:
+                    logger.warning(f"Telegram video too large ({file_size_mb:.1f}MB), skipping")
+                    os.remove(telegram_video_path)
+                    return None
+                
+                logger.info(f"Created Telegram video: {telegram_video_path} ({file_size_mb:.1f}MB)")
+                return telegram_video_path
+            else:
+                logger.error(f"Failed to create Telegram video")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error creating Telegram video: {e}")
+            return None
+    
     def _detect_motion(self, frame) -> bool:
         """Detect motion in frame using frame differencing"""
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
