@@ -107,15 +107,18 @@ user_problem_statement: "Optimize video streaming to reuse existing camera conne
 backend:
   - task: "Reuse existing CameraRecorder for live streams"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Modified get_live_stream endpoint (line 2076-2150) to check if an active recorder exists in active_recorders dict. If recorder exists and is running, use its cached frames (recorder.last_frame) instead of creating new cv2.VideoCapture. Falls back to temporary stream if no active recorder found."
+        - working: true
+          agent: "testing"
+          comment: "✅ STREAM REUSE OPTIMIZATION WORKING CORRECTLY. Tested with 2 cameras (1 active, 1 inactive). Active camera shows '✅ Using cached frames from active recorder: {camera_id}' in logs. Inactive camera shows 'No active recorder for {camera_id}, creating temporary stream' in logs. Multiple concurrent requests to same active camera successfully reuse existing recorder without creating duplicates. Found 8+ stream reuse messages and 2+ fallback messages in backend logs. Overall success rate: 100%. CPU optimization confirmed - no duplicate camera connections created."
 
 frontend:
   - task: "Live stream loading in new windows"
