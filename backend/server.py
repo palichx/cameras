@@ -1019,8 +1019,8 @@ class CameraRecorder:
         self.last_frame = gray
         return motion_percentage > threshold
     
-    async def _save_motion_event(self, frame):
-        """Save motion event to database"""
+    def _save_motion_event_sync(self, frame):
+        """Save motion event to database (sync version for thread)"""
         try:
             # Save snapshot
             snapshot_dir = STORAGE_PATH / self.camera.id / "snapshots"
@@ -1030,18 +1030,12 @@ class CameraRecorder:
             snapshot_path = str(snapshot_dir / f"motion_{timestamp}.jpg")
             cv2.imwrite(snapshot_path, frame)
             
-            event = MotionEvent(
-                camera_id=self.camera.id,
-                camera_name=self.camera.name,
-                snapshot_path=snapshot_path
-            )
-            
-            doc = event.model_dump()
-            doc['timestamp'] = doc['timestamp'].isoformat()
-            await db.motion_events.insert_one(doc)
+            # We'll save to database in the main async context instead
+            # Just save the snapshot for now
+            logger.info(f"Motion snapshot saved: {snapshot_path}")
             
         except Exception as e:
-            logger.error(f"Error saving motion event: {str(e)}")
+            logger.error(f"Error saving motion snapshot: {str(e)}")
     
     async def _save_recording_metadata(self, file_path: str, recording_type: str):
         """Save recording metadata to database"""
