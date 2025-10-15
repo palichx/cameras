@@ -397,6 +397,77 @@ class VideoSurveillanceBot:
             logger.error(f"Error converting video: {e}")
             return source_path
     
+    def _merge_and_convert_videos(self, video_files: list, camera_name: str) -> Optional[str]:
+        """Merge multiple videos into one and convert to Telegram format"""
+        try:
+            import tempfile
+            
+            # Create temporary directory
+            temp_dir = tempfile.mkdtemp()
+            
+            # Create file list for ffmpeg concat
+            list_file = os.path.join(temp_dir, "filelist.txt")
+            with open(list_file, 'w') as f:
+                for video_file in video_files:
+                    # Escape special characters for ffmpeg
+                    escaped_path = video_file.replace("'", "'\\''")
+                    f.write(f"file '{escaped_path}'\n")
+            
+            # Output merged file (before conversion)
+            merged_raw = os.path.join(temp_dir, "merged_raw.mp4")
+            
+            # Step 1: Merge videos using concat demuxer
+            logger.info(f"Merging {len(video_files)} videos...")
+            result = os.system(
+                f'ffmpeg -f concat -safe 0 -i "{list_file}" '
+                f'-c copy "{merged_raw}" -y '
+                f'> /dev/null 2>&1'
+            )
+            
+            if result != 0 or not os.path.exists(merged_raw):
+                logger.error("Failed to merge videos")
+                # Cleanup
+                os.system(f'rm -rf "{temp_dir}"')
+                return None
+            
+            # Step 2: Convert to Telegram format (640x480, 5 FPS, 5x speed)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_camera_name = "".join(c for c in camera_name if c.isalnum() or c in (' ', '_')).strip()
+            output_file = os.path.join(temp_dir, f"{safe_camera_name}_{timestamp}_merged.mp4")
+            
+            logger.info(f"Converting merged video to Telegram format...")
+            result = os.system(
+                f'ffmpeg -i "{merged_raw}" '
+                f'-vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,setpts=0.2*PTS" '
+                f'-r 5 '
+                f'-c:v libx264 -preset ultrafast -crf 30 '
+                f'-an '
+                f'-movflags +faststart '
+                f'"{output_file}" -y '
+                f'> /dev/null 2>&1'
+            )
+            
+            if result == 0 and os.path.exists(output_file):
+                logger.info(f"Merged video created: {output_file} ({os.path.getsize(output_file) / 1024 / 1024:.1f} MB)")
+                
+                # Cleanup intermediate files
+                try:
+                    os.remove(list_file)
+                    os.remove(merged_raw)
+                except:
+                    pass
+                
+                return output_file
+            else:
+                logger.error("Failed to convert merged video")
+                # Cleanup
+                os.system(f'rm -rf "{temp_dir}"')
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error merging videos: {e}", exc_info=True)
+            return None
+    
     async def show_main_menu(self, query):
         """Show main menu"""
         keyboard = [
