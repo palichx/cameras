@@ -298,6 +298,10 @@ class CameraRecorder:
         try:
             stream = requests.get(stream_url, auth=auth, stream=True, timeout=10)
             
+            if stream.status_code != 200:
+                logger.error(f"HTTP MJPEG stream returned status {stream.status_code}")
+                return False
+            
             fps = 20  # Assume 20 fps for HTTP streams
             width, height = None, None
             
