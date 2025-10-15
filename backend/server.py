@@ -516,7 +516,7 @@ class CameraRecorder:
                             daemon=True
                         ).start()
                     
-                    run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
+                    self._save_recording_metadata_sync(self.current_recording, "continuous")
                     
                     continuous_file = self._create_recording_file("continuous")
                     continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
@@ -535,7 +535,7 @@ class CameraRecorder:
                         daemon=True
                     ).start()
                 
-                run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
+                self._save_recording_metadata_sync(self.current_recording, "continuous")
             
             if self.motion_writer:
                 self._stop_motion_recording()
@@ -640,7 +640,7 @@ class CameraRecorder:
                         daemon=True
                     ).start()
                 
-                run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
+                self._save_recording_metadata_sync(self.current_recording, "continuous")
                 
                 continuous_file = self._create_recording_file("continuous")
                 continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
@@ -661,7 +661,7 @@ class CameraRecorder:
                     daemon=True
                 ).start()
             
-            run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
+            self._save_recording_metadata_sync(self.current_recording, "continuous")
         
         if self.motion_writer:
             self._stop_motion_recording()
@@ -781,7 +781,7 @@ class CameraRecorder:
                     )
                     conversion_thread.start()
                 
-                run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
+                self._save_recording_metadata_sync(self.current_recording, "continuous")
                 
                 continuous_file = self._create_recording_file("continuous")
                 continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
@@ -801,7 +801,7 @@ class CameraRecorder:
                 )
                 conversion_thread.start()
             
-            run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
+            self._save_recording_metadata_sync(self.current_recording, "continuous")
         
         if self.motion_writer:
             self._stop_motion_recording()
@@ -847,7 +847,7 @@ class CameraRecorder:
                 )
                 conversion_thread.start()
             
-            run_async_in_executor(self._save_recording_metadata(self.motion_file_path, "motion"))
+            self._save_recording_metadata_sync(self.motion_file_path, "motion")
             logger.info(f"Stopped motion recording: {self.motion_file_path}")
         
         self.motion_file_path = None
