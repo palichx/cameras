@@ -524,6 +524,94 @@ const Recordings = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Date Range Delete Dialog */}
+      <Dialog open={showDateRangeDialog} onOpenChange={setShowDateRangeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Удаление записей по дате</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                Дата начала
+              </label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                data-testid="start-date-input"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                Дата окончания
+              </label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                data-testid="end-date-input"
+              />
+            </div>
+
+            <div className="text-sm text-slate-600">
+              {selectedCamera !== 'all' && (
+                <p>Будут удалены записи только с выбранной камеры</p>
+              )}
+              {selectedCamera === 'all' && (
+                <p>Будут удалены записи со всех камер в указанном диапазоне</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDateRangeDialog(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteByDateRange}
+              data-testid="confirm-date-delete"
+            >
+              Удалить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteAction?.message}
+              <br />
+              <span className="text-red-600 font-medium">
+                Это действие необратимо!
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="cancel-delete">
+              Отмена
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="confirm-delete"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
