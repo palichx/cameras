@@ -725,9 +725,11 @@ class CameraRecorder:
                                 self.motion_writer.write(buffered_frame)
                         self._save_motion_event_sync(frame)
                         self.motion_state = "recording"
+                        logger.info(f"Motion detected - wrote {len(self.pre_record_buffer)} pre-recorded frames")
                     
                     elif self.motion_state == "cooldown":
-                        self._start_motion_recording(fps, width, height)
+                        # Motion resumed during cooldown - CONTINUE recording, don't create new file
+                        logger.info("Motion resumed during cooldown - continuing recording")
                         self.motion_state = "recording"
                     
                     if self.motion_writer and self.motion_state == "recording":
@@ -742,6 +744,7 @@ class CameraRecorder:
                         else:
                             self._stop_motion_recording()
                             self.motion_state = "cooldown"
+                            logger.info(f"Motion ended - post-recording complete")
                     elif self.motion_state == "cooldown":
                         if frames_since_motion > cooldown_frames:
                             self.motion_state = "idle"
