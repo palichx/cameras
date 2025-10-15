@@ -102,53 +102,20 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Implement mass management functionality for recordings in the video surveillance application. Users should be able to: 1) Select multiple recordings with checkboxes, 2) Delete selected recordings in bulk, 3) Delete recordings by date range, 4) Delete all recordings from a specific camera. All delete operations should have confirmation dialogs."
+user_problem_statement: "Optimize video streaming to reuse existing camera connections when opening live views in new windows. Previously, opening a camera in a new window created a duplicate connection to the camera, doubling CPU load. The fix should reuse the existing CameraRecorder instance and share frames between multiple clients."
 
 backend:
-  - task: "Bulk delete recordings endpoint"
+  - task: "Reuse existing CameraRecorder for live streams"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "POST /api/recordings/bulk-delete endpoint already exists, accepts {ids: []} for multiple deletion"
-        - working: true
-          agent: "testing"
-          comment: "✅ TESTED: Bulk delete API working correctly. Successfully deleted 3 recordings by IDs, verified deletion from database. Proper error handling for empty IDs array (400 status). API returns correct deleted count and removes both files and database records."
-  
-  - task: "Delete recordings by date range endpoint"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "POST /api/recordings/delete-by-date endpoint already exists, accepts {start_date, end_date, camera_id}"
-        - working: true
-          agent: "testing"
-          comment: "✅ TESTED: Date range delete API working correctly. Successfully tested with both camera_id filter and without. API accepts ISO date format, returns correct deleted count. Proper error handling for missing required fields (400 status). Minor: Invalid date format doesn't return 400 but handles gracefully with 0 deletions."
-  
-  - task: "Delete recordings by camera endpoint"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "POST /api/recordings/delete-by-camera endpoint already exists, accepts camera_id as query parameter"
-        - working: true
-          agent: "testing"
-          comment: "✅ TESTED: Delete by camera API working correctly. Successfully tested with existing camera ID, returns correct deleted count (0 for camera with no recordings). API handles non-existent camera IDs gracefully. Verified no recordings remain after deletion."
+          comment: "Modified get_live_stream endpoint (line 2076-2150) to check if an active recorder exists in active_recorders dict. If recorder exists and is running, use its cached frames (recorder.last_frame) instead of creating new cv2.VideoCapture. Falls back to temporary stream if no active recorder found."
 
 frontend:
   - task: "Checkbox selection for recordings"
