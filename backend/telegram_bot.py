@@ -197,7 +197,11 @@ class VideoSurveillanceBot:
             camera_name = camera['name'] if camera else "Неизвестная камера"
             
             keyboard = [
-                [InlineKeyboardButton("⏱️ Последний час", callback_data=f"videos_{camera_id}_1h")],
+                [InlineKeyboardButton("⏱️ Последние 5 минут", callback_data=f"videos_{camera_id}_5m")],
+                [InlineKeyboardButton("⏱️ Последние 10 минут", callback_data=f"videos_{camera_id}_10m")],
+                [InlineKeyboardButton("⏱️ Последние 20 минут", callback_data=f"videos_{camera_id}_20m")],
+                [InlineKeyboardButton("⏱️ Последние 30 минут", callback_data=f"videos_{camera_id}_30m")],
+                [InlineKeyboardButton("📅 Последний час", callback_data=f"videos_{camera_id}_1h")],
                 [InlineKeyboardButton("📅 Последние 6 часов", callback_data=f"videos_{camera_id}_6h")],
                 [InlineKeyboardButton("📅 Последние 24 часа", callback_data=f"videos_{camera_id}_24h")],
                 [InlineKeyboardButton("📅 Последние 7 дней", callback_data=f"videos_{camera_id}_7d")],
