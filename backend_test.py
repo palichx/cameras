@@ -182,6 +182,139 @@ class VideoSurveillanceAPITester:
         finally:
             self.tests_run += 1
 
+    def test_bulk_delete_recordings(self):
+        """Test bulk delete recordings by IDs"""
+        print("\n🔍 Testing Bulk Delete Recordings...")
+        
+        # First get some recordings
+        success, recordings = self.run_test("Get Recordings for Bulk Delete", "GET", "recordings?limit=5", 200)
+        if not success or not recordings:
+            print("❌ No recordings available for bulk delete test")
+            return False
+        
+        if len(recordings) < 2:
+            print("❌ Need at least 2 recordings for bulk delete test")
+            return False
+        
+        # Extract 2-3 recording IDs
+        recording_ids = [rec['id'] for rec in recordings[:3]]
+        print(f"   Selected {len(recording_ids)} recordings for deletion: {recording_ids}")
+        
+        # Test bulk delete
+        bulk_delete_data = {"ids": recording_ids}
+        success, response = self.run_test("Bulk Delete Recordings", "POST", "recordings/bulk-delete", 200, data=bulk_delete_data)
+        
+        if success:
+            deleted_count = response.get('deleted', 0)
+            print(f"   Deleted count: {deleted_count}")
+            
+            # Verify recordings are actually deleted
+            for recording_id in recording_ids:
+                verify_success, _ = self.run_test(f"Verify Recording {recording_id} Deleted", "GET", f"recordings/{recording_id}", 404)
+                if not verify_success:
+                    print(f"❌ Recording {recording_id} still exists after bulk delete")
+                    return False
+            
+            print("✅ All recordings successfully deleted from database")
+        
+        return success
+
+    def test_delete_by_date_range(self):
+        """Test delete recordings by date range"""
+        print("\n🔍 Testing Delete by Date Range...")
+        
+        # First get a recording to use its date
+        success, recordings = self.run_test("Get Recording for Date Range", "GET", "recordings?limit=1", 200)
+        if not success or not recordings:
+            print("❌ No recordings available for date range test")
+            return False
+        
+        recording = recordings[0]
+        start_time = recording['start_time']
+        
+        # Parse the datetime and create a range
+        if isinstance(start_time, str):
+            from datetime import datetime, timedelta
+            dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+        else:
+            dt = start_time
+        
+        # Create date range (same day)
+        start_date = dt.strftime('%Y-%m-%dT00:00:00')
+        end_date = dt.strftime('%Y-%m-%dT23:59:59')
+        
+        print(f"   Using date range: {start_date} to {end_date}")
+        
+        # Test delete by date range without camera filter
+        date_delete_data = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "camera_id": None
+        }
+        
+        success, response = self.run_test("Delete by Date Range", "POST", "recordings/delete-by-date", 200, data=date_delete_data)
+        
+        if success:
+            deleted_count = response.get('deleted', 0)
+            print(f"   Deleted count: {deleted_count}")
+        
+        # Test with specific camera_id
+        if self.created_camera_id:
+            date_delete_data_with_camera = {
+                "start_date": start_date,
+                "end_date": end_date,
+                "camera_id": self.created_camera_id
+            }
+            
+            success2, response2 = self.run_test("Delete by Date Range with Camera", "POST", "recordings/delete-by-date", 200, data=date_delete_data_with_camera)
+            if success2:
+                deleted_count2 = response2.get('deleted', 0)
+                print(f"   Deleted count with camera filter: {deleted_count2}")
+            
+            return success and success2
+        
+        return success
+
+    def test_delete_by_camera(self):
+        """Test delete all recordings for a specific camera"""
+        print("\n🔍 Testing Delete by Camera...")
+        
+        # First get list of cameras
+        success, cameras = self.run_test("Get Cameras for Delete Test", "GET", "cameras", 200)
+        if not success or not cameras:
+            print("❌ No cameras available for delete by camera test")
+            return False
+        
+        camera = cameras[0]
+        camera_id = camera['id']
+        print(f"   Testing with camera: {camera['name']} (ID: {camera_id})")
+        
+        # Get recordings for this camera to count them
+        success, recordings = self.run_test("Get Recordings for Camera", "GET", f"recordings?camera_id={camera_id}", 200)
+        if success:
+            initial_count = len(recordings)
+            print(f"   Initial recordings count for camera: {initial_count}")
+        
+        # Delete all recordings for this camera
+        success, response = self.run_test("Delete by Camera", "POST", f"recordings/delete-by-camera?camera_id={camera_id}", 200)
+        
+        if success:
+            deleted_count = response.get('deleted', 0)
+            print(f"   Deleted count: {deleted_count}")
+            
+            # Verify no recordings remain for this camera
+            success_verify, remaining_recordings = self.run_test("Verify No Recordings Remain", "GET", f"recordings?camera_id={camera_id}", 200)
+            if success_verify:
+                remaining_count = len(remaining_recordings)
+                print(f"   Remaining recordings for camera: {remaining_count}")
+                if remaining_count == 0:
+                    print("✅ All recordings successfully deleted for camera")
+                else:
+                    print(f"❌ {remaining_count} recordings still exist for camera")
+                    return False
+        
+        return success
+
     def test_delete_camera(self):
         """Test camera deletion (cleanup)"""
         if not self.created_camera_id:
