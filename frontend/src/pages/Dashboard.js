@@ -25,14 +25,22 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [camerasRes, recordingsRes, eventsRes] = await Promise.all([
+      const [camerasRes, recordingsRes, eventsRes, statusRes] = await Promise.all([
         axios.get(`${API}/cameras`, { timeout: 10000 }),
         axios.get(`${API}/recordings?limit=1000`, { timeout: 10000 }),
         axios.get(`${API}/motion-events?limit=1000`, { timeout: 10000 }),
+        axios.get(`${API}/cameras/status/all`, { timeout: 10000 }),
       ]);
 
       const camerasList = camerasRes.data;
       setCameras(camerasList);
+
+      // Create status map for quick lookup
+      const statusMap = {};
+      statusRes.data.forEach(status => {
+        statusMap[status.id] = status;
+      });
+      setCamerasStatus(statusMap);
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
