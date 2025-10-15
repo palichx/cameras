@@ -438,6 +438,20 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
             </div>
           )}
 
+          <div>
+            <Label htmlFor="storage_path">Каталог для хранения записей</Label>
+            <Input
+              id="storage_path"
+              data-testid="camera-storage-path-input"
+              value={formData.storage_path}
+              onChange={(e) => setFormData({ ...formData, storage_path: e.target.value })}
+              placeholder="/app/backend/recordings (по умолчанию)"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Укажите абсолютный путь к каталогу. Если не указано, используется каталог по умолчанию.
+            </p>
+          </div>
+
           <div className="flex items-center justify-between">
             <Label htmlFor="continuous_recording">Непрерывная запись</Label>
             <Switch
