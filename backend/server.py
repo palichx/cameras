@@ -126,6 +126,7 @@ class CameraCreate(BaseModel):
     motion_cooldown_seconds: float = 2.0
     telegram_send_notification: bool = False
     telegram_send_video: bool = False
+    storage_path: Optional[str] = None
     motion_algorithm: str = "mog2"
     min_object_area: int = 500
     blur_size: int = 21
