@@ -969,14 +969,14 @@ class CameraRecorder:
             # Keep original file
     
     def _create_telegram_video(self, source_video_path: str) -> str:
-        """Create low-quality video for Telegram (640x480, 1fps)"""
+        """Create low-quality video for Telegram (640x480, 5fps)"""
         try:
             telegram_video_path = source_video_path.replace('.mp4', '_telegram.mp4')
             
             # Use ffmpeg to create low-quality version
             result = os.system(
                 f'ffmpeg -i "{source_video_path}" '
-                f'-vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,fps=1" '
+                f'-vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,fps=5" '
                 f'-c:v libx264 -preset ultrafast -crf 35 '
                 f'-an '  # Remove audio
                 f'-movflags +faststart '
