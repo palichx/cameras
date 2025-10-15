@@ -503,6 +503,8 @@ class CameraRecorder:
         
         if self.motion_writer:
             self._stop_motion_recording()
+        
+        return True
     
     def _process_frames(self, cap, source_type="rtsp"):
         """Process frames from video capture with pre/post recording buffer"""
