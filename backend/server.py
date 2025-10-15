@@ -1461,6 +1461,103 @@ async def delete_recording(recording_id: str):
     
     return {"message": "Recording deleted successfully"}
 
+@api_router.post("/recordings/bulk-delete")
+async def bulk_delete_recordings(request: Request):
+    """Delete multiple recordings at once"""
+    data = await request.json()
+    recording_ids = data.get('ids', [])
+    
+    if not recording_ids:
+        raise HTTPException(status_code=400, detail="No recording IDs provided")
+    
+    deleted_count = 0
+    failed_count = 0
+    
+    for recording_id in recording_ids:
+        try:
+            recording = await db.recordings.find_one({"id": recording_id}, {"_id": 0})
+            if recording:
+                # Delete file
+                file_path = recording['file_path']
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                
+                await db.recordings.delete_one({"id": recording_id})
+                deleted_count += 1
+        except Exception as e:
+            logger.error(f"Error deleting recording {recording_id}: {e}")
+            failed_count += 1
+    
+    return {
+        "message": f"Deleted {deleted_count} recordings",
+        "deleted": deleted_count,
+        "failed": failed_count
+    }
+
+@api_router.post("/recordings/delete-by-date")
+async def delete_recordings_by_date(request: Request):
+    """Delete recordings by date range"""
+    data = await request.json()
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    camera_id = data.get('camera_id')
+    
+    if not start_date or not end_date:
+        raise HTTPException(status_code=400, detail="Start and end dates are required")
+    
+    # Build query
+    query = {
+        "start_time": {
+            "$gte": start_date,
+            "$lte": end_date
+        }
+    }
+    
+    if camera_id:
+        query["camera_id"] = camera_id
+    
+    # Get all recordings in range
+    recordings = await db.recordings.find(query, {"_id": 0}).to_list(None)
+    
+    deleted_count = 0
+    for recording in recordings:
+        try:
+            file_path = recording['file_path']
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            
+            await db.recordings.delete_one({"id": recording['id']})
+            deleted_count += 1
+        except Exception as e:
+            logger.error(f"Error deleting recording: {e}")
+    
+    return {
+        "message": f"Deleted {deleted_count} recordings",
+        "deleted": deleted_count
+    }
+
+@api_router.post("/recordings/delete-by-camera")
+async def delete_recordings_by_camera(camera_id: str):
+    """Delete all recordings for a specific camera"""
+    recordings = await db.recordings.find({"camera_id": camera_id}, {"_id": 0}).to_list(None)
+    
+    deleted_count = 0
+    for recording in recordings:
+        try:
+            file_path = recording['file_path']
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            
+            await db.recordings.delete_one({"id": recording['id']})
+            deleted_count += 1
+        except Exception as e:
+            logger.error(f"Error deleting recording: {e}")
+    
+    return {
+        "message": f"Deleted {deleted_count} recordings for camera",
+        "deleted": deleted_count
+    }
+
 # Motion Events
 @api_router.get("/motion-events", response_model=List[MotionEvent])
 async def get_motion_events(camera_id: Optional[str] = None, limit: int = 100):
