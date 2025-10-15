@@ -1998,8 +1998,6 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     """Start all active cameras on startup"""
-    global telegram_bot_instance, telegram_bot_thread
-    
     # Migrate old cameras to new schema
     cameras = await db.cameras.find({}).to_list(1000)
     
@@ -2046,41 +2044,7 @@ async def startup_event():
             logger.error(f"Failed to start camera {camera_doc.get('name', 'unknown')}: {str(e)}")
     
     # Start Telegram bot in separate thread
-    try:
-        # Get settings from database
-        from pymongo import MongoClient
-        sync_client = MongoClient(mongo_url)
-        sync_db = sync_client[os.environ['DB_NAME']]
-        settings_doc = sync_db.settings.find_one({"id": "system_settings"}, {"_id": 0})
-        sync_client.close()
-        
-        if settings_doc:
-            telegram = settings_doc.get('telegram', {})
-            if telegram.get('enabled') and telegram.get('bot_token') and telegram.get('chat_id'):
-                from telegram_bot import VideoSurveillanceBot
-                from threading import Thread
-                
-                bot_token = telegram['bot_token']
-                chat_id = telegram['chat_id']
-                
-                telegram_bot_instance = VideoSurveillanceBot(
-                    bot_token=bot_token,
-                    allowed_chat_id=chat_id,
-                    mongo_url=mongo_url,
-                    db_name=os.environ['DB_NAME']
-                )
-                
-                # Start bot in separate thread
-                telegram_bot_thread = Thread(target=telegram_bot_instance.start, daemon=True)
-                telegram_bot_thread.start()
-                
-                logger.info("✅ Telegram bot started successfully")
-            else:
-                logger.info("Telegram bot not enabled or not configured")
-        else:
-            logger.info("Settings not found, Telegram bot not started")
-    except Exception as e:
-        logger.error(f"Failed to start Telegram bot: {e}")
+    start_telegram_bot_if_configured()
 
 @app.on_event("shutdown")
 async def shutdown_event():
