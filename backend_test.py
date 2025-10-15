@@ -799,6 +799,14 @@ def main():
         ("Bulk Delete Recordings", tester.test_bulk_delete_recordings),
         ("Delete by Date Range", tester.test_delete_by_date_range),
         ("Delete by Camera", tester.test_delete_by_camera),
+        # === EXCLUSION ZONES TESTS ===
+        ("Camera Snapshot Endpoint", tester.test_camera_snapshot_endpoint),
+        ("Rectangle Exclusion Zones", tester.test_exclusion_zones_rectangle),
+        ("Polygon Exclusion Zones", tester.test_exclusion_zones_polygon),
+        ("Multiple Mixed Exclusion Zones", tester.test_exclusion_zones_multiple),
+        ("Empty Exclusion Zones", tester.test_exclusion_zones_empty),
+        ("Exclusion Zones Non-existent Camera", tester.test_exclusion_zones_nonexistent_camera),
+        ("Motion Detection with Exclusion Zones", tester.test_motion_detection_with_exclusion_zones),
         ("Invalid Endpoints", tester.test_invalid_endpoints),
         ("Delete Camera (Cleanup)", tester.test_delete_camera),
     ]
