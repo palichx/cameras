@@ -326,6 +326,20 @@ const CameraCard = ({ camera, status }) => {
               className="w-full h-full object-cover"
               onError={() => setIsLive(false)}
             />
+            {/* Recording indicator - top left */}
+            {isRecording && (
+              <div className="absolute top-2 left-2 z-10 flex items-center space-x-1 bg-red-600/90 backdrop-blur-sm px-2 py-1 rounded-full animate-pulse">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+                <span className="text-white text-xs font-medium">REC</span>
+              </div>
+            )}
+            {/* Motion indicator - top right */}
+            {isMotionDetected && (
+              <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-orange-600/90 backdrop-blur-sm px-2 py-1 rounded-full">
+                <Activity className="w-3 h-3 text-white" />
+                <span className="text-white text-xs font-medium">ДВИЖЕНИЕ</span>
+              </div>
+            )}
             {/* Overlay controls */}
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
               <button
@@ -350,6 +364,20 @@ const CameraCard = ({ camera, status }) => {
           </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
+            {/* Recording indicator when not live */}
+            {isRecording && (
+              <div className="absolute top-2 left-2 z-10 flex items-center space-x-1 bg-red-600/90 backdrop-blur-sm px-2 py-1 rounded-full animate-pulse">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+                <span className="text-white text-xs font-medium">REC</span>
+              </div>
+            )}
+            {/* Motion indicator when not live */}
+            {isMotionDetected && (
+              <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-orange-600/90 backdrop-blur-sm px-2 py-1 rounded-full">
+                <Activity className="w-3 h-3 text-white" />
+                <span className="text-white text-xs font-medium">ДВИЖЕНИЕ</span>
+              </div>
+            )}
             <button
               onClick={() => setIsLive(true)}
               data-testid={`play-camera-${camera.id}`}
