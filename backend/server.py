@@ -167,7 +167,7 @@ class FFmpegSettings(BaseModel):
     preset: str = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium
     crf: int = 30  # 18-35, lower = better quality
     max_resolution: str = "720p"  # 480p, 720p, 1080p, original
-    target_fps: int = 15  # 10, 15, 20, 30
+    target_fps: int = 0  # 0 = original, or specify: 10, 15, 20, 24, 30
     audio_bitrate: str = "64k"  # 32k, 64k, 128k
     threads: int = 2  # 1, 2, 4, auto
     enabled: bool = True
