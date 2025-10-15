@@ -146,6 +146,13 @@ class CameraUpdate(BaseModel):
     motion_cooldown_seconds: Optional[float] = None
     telegram_send_notification: Optional[bool] = None
     telegram_send_video: Optional[bool] = None
+    motion_algorithm: Optional[str] = None
+    min_object_area: Optional[int] = None
+    blur_size: Optional[int] = None
+    motion_threshold: Optional[int] = None
+    mog2_history: Optional[int] = None
+    mog2_var_threshold: Optional[int] = None
+    detect_shadows: Optional[bool] = None
 
 class Recording(BaseModel):
     model_config = ConfigDict(extra="ignore")
