@@ -2016,9 +2016,21 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Stop all recorders on shutdown"""
+    """Stop all recorders and bot on shutdown"""
+    global telegram_bot_instance
+    
+    # Stop all recorders
     for recorder in active_recorders.values():
         recorder.stop()
     
     active_recorders.clear()
+    
+    # Stop Telegram bot
+    if telegram_bot_instance:
+        try:
+            telegram_bot_instance.stop()
+            logger.info("Telegram bot stopped")
+        except Exception as e:
+            logger.error(f"Error stopping Telegram bot: {e}")
+    
     client.close()
