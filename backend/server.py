@@ -277,11 +277,16 @@ class CameraRecorder:
         
         if not cap.isOpened():
             logger.error(f"Failed to open RTSP stream for camera {self.camera.name}")
-            time.sleep(5)
-            return
+            return False
         
-        self._process_frames(cap, source_type="rtsp")
-        cap.release()
+        try:
+            self._process_frames(cap, source_type="rtsp")
+            return True
+        except Exception as e:
+            logger.error(f"Error in RTSP recording: {str(e)}")
+            return False
+        finally:
+            cap.release()
     
     def _record_http_mjpeg(self):
         """Record from HTTP MJPEG stream with pre/post recording"""
