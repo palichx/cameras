@@ -878,11 +878,12 @@ class CameraRecorder:
                         telegram_video_path
                     )
                     # Clean up telegram video after sending
-                    try:
-                        if os.path.exists(telegram_video_path):
-                            os.remove(telegram_video_path)
-                    except:
-                        pass
+                    # Temporarily disabled for testing
+                    # try:
+                    #     if os.path.exists(telegram_video_path):
+                    #         os.remove(telegram_video_path)
+                    # except:
+                    #     pass
                 elif self.camera.telegram_send_notification:
                     # Send notification only
                     send_telegram_notification_sync(
