@@ -764,25 +764,49 @@ class CameraRecorder:
             logger.error(f"Error in async H.264 conversion: {e}")
     
     def _convert_to_h264(self, file_path: str):
-        """Convert video to H.264 codec for browser compatibility (optimized for low CPU)"""
+        """Convert video to H.264 codec for browser compatibility (uses settings from DB)"""
         try:
+            # Get settings from database
+            settings_doc = asyncio.run(db.settings.find_one({"id": "system_settings"}, {"_id": 0}))
+            
+            if settings_doc and settings_doc.get('ffmpeg', {}).get('enabled') == False:
+                logger.info(f"H.264 conversion disabled in settings, skipping: {file_path}")
+                return
+            
+            # Extract FFmpeg settings or use defaults
+            ffmpeg_settings = settings_doc.get('ffmpeg', {}) if settings_doc else {}
+            preset = ffmpeg_settings.get('preset', 'ultrafast')
+            crf = ffmpeg_settings.get('crf', 30)
+            max_resolution = ffmpeg_settings.get('max_resolution', '720p')
+            target_fps = ffmpeg_settings.get('target_fps', 15)
+            audio_bitrate = ffmpeg_settings.get('audio_bitrate', '64k')
+            threads = ffmpeg_settings.get('threads', 2)
+            
+            # Convert resolution to dimensions
+            resolution_map = {
+                '480p': (854, 480),
+                '720p': (1280, 720),
+                '1080p': (1920, 1080),
+                'original': (9999, 9999)
+            }
+            max_width, max_height = resolution_map.get(max_resolution, (1280, 720))
+            
             temp_path = file_path + ".tmp.mp4"
             
-            # Use ffmpeg with optimized settings for low CPU usage
-            # - preset ultrafast: fastest encoding, less CPU (10x faster than 'fast')
-            # - crf 30: lower quality (acceptable for surveillance), smaller files
-            # - scale: reduce to max 720p to save space and encoding time
-            # - fps: limit to 15 fps (enough for surveillance, 50% less frames)
-            # - threads 2: limit CPU cores usage
-            # - tune zerolatency: optimize for fast encoding
-            # - b:a 64k: low audio bitrate
+            # Build scale filter
+            if max_resolution == 'original':
+                scale_filter = f"fps={target_fps}"
+            else:
+                scale_filter = f"scale='min({max_width},iw)':'min({max_height},ih)':force_original_aspect_ratio=decrease,fps={target_fps}"
+            
+            # Build ffmpeg command
             result = os.system(
                 f'ffmpeg -i "{file_path}" '
-                f'-c:v libx264 -preset ultrafast -tune zerolatency -crf 30 '
-                f'-vf "scale=\'min(1280,iw)\':\'min(720,ih)\':force_original_aspect_ratio=decrease,fps=15" '
-                f'-c:a aac -b:a 64k '
+                f'-c:v libx264 -preset {preset} -tune zerolatency -crf {crf} '
+                f'-vf "{scale_filter}" '
+                f'-c:a aac -b:a {audio_bitrate} '
                 f'-movflags +faststart '
-                f'-threads 2 '
+                f'-threads {threads} '
                 f'"{temp_path}" -y '
                 f'> /dev/null 2>&1'
             )
