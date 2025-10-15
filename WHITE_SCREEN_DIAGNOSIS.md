@@ -39,7 +39,7 @@
 
 **Внешний URL через Kubernetes ingress:**
 ```bash
-curl https://camguard-4.preview.emergentagent.com/api/cameras
+curl https://videosentry-2.preview.emergentagent.com/api/cameras
 # Результат: 404 page not found ❌
 ```
 
@@ -108,10 +108,10 @@ curl http://localhost:80/api/cameras
 
 ### 4. Внешний URL (через ingress)
 ```bash
-curl https://camguard-4.preview.emergentagent.com/
+curl https://videosentry-2.preview.emergentagent.com/
 # Должно: HTML страница ✅
 
-curl https://camguard-4.preview.emergentagent.com/api/cameras
+curl https://videosentry-2.preview.emergentagent.com/api/cameras
 # Должно: JSON ❌ Получаем: 404
 ```
 
@@ -128,7 +128,7 @@ curl https://camguard-4.preview.emergentagent.com/api/cameras
 **Информация для поддержки:**
 ```
 Приложение: smart-cam-system
-URL: https://camguard-4.preview.emergentagent.com
+URL: https://videosentry-2.preview.emergentagent.com
 Проблема: Ingress не маршрутизирует /api/* к backend
 
 Детали:
@@ -187,15 +187,15 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 
 ```bash
 # 1. Проверить API
-curl https://camguard-4.preview.emergentagent.com/api/cameras
+curl https://videosentry-2.preview.emergentagent.com/api/cameras
 # Должно вернуть JSON массив камер
 
 # 2. Проверить frontend
-curl https://camguard-4.preview.emergentagent.com/
+curl https://videosentry-2.preview.emergentagent.com/
 # Должно вернуть HTML
 
 # 3. Открыть в браузере
-https://camguard-4.preview.emergentagent.com
+https://videosentry-2.preview.emergentagent.com
 # Должна загрузиться Dashboard с данными
 ```
 
@@ -220,7 +220,7 @@ tail -f /var/log/nginx/app_error.log
 ### Проверка доступности:
 ```bash
 # Каждые 5 секунд проверять API
-watch -n 5 'curl -s https://camguard-4.preview.emergentagent.com/api/cameras | head -c 100'
+watch -n 5 'curl -s https://videosentry-2.preview.emergentagent.com/api/cameras | head -c 100'
 ```
 
 ## Заключение

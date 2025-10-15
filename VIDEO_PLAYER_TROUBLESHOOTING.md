@@ -9,7 +9,7 @@
 4. Тестовая страница работает: `http://localhost:8001/api/test-player`
 
 ### ❌ Проблема:
-Видеоплеер не работает через внешний URL (https://camguard-4.preview.emergentagent.com) из-за проблемы с Kubernetes ingress - API запросы `/api/*` не достигают backend сервиса.
+Видеоплеер не работает через внешний URL (https://videosentry-2.preview.emergentagent.com) из-за проблемы с Kubernetes ingress - API запросы `/api/*` не достигают backend сервиса.
 
 ## Диагностика
 
@@ -35,7 +35,7 @@ curl http://localhost:8001/api/test-player
 
 ```bash
 # API запросы таймаутят или возвращают 404
-curl https://camguard-4.preview.emergentagent.com/api/recordings
+curl https://videosentry-2.preview.emergentagent.com/api/recordings
 # Ожидание... timeout или 404
 ```
 
@@ -135,7 +135,7 @@ server {
 ```
 Тема: Настройка Kubernetes Ingress для backend API
 
-Приложение: https://camguard-4.preview.emergentagent.com
+Приложение: https://videosentry-2.preview.emergentagent.com
 Проблема: Запросы к /api/* не достигают backend сервиса
 
 Детали:
@@ -202,7 +202,7 @@ ls -lh /tmp/test.mp4
 
 ```bash
 # Test external API
-curl https://camguard-4.preview.emergentagent.com/api/recordings
+curl https://videosentry-2.preview.emergentagent.com/api/recordings
 
 # Should return recordings array (not 404 or timeout)
 ```
@@ -259,7 +259,7 @@ video.addEventListener('error', ...);          // Ошибка загрузки
 ❌ Это требует помощи поддержки Emergent
 
 ### Как проверить что всё работает:
-1. После настройки ingress откройте: https://camguard-4.preview.emergentagent.com/recordings
+1. После настройки ingress откройте: https://videosentry-2.preview.emergentagent.com/recordings
 2. Нажмите синюю кнопку Play на любой записи
 3. Видео должно начать воспроизводиться автоматически
 4. Проверьте что seek (перемотка) работает
