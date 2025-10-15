@@ -142,6 +142,123 @@ const Recordings = () => {
     });
   };
 
+  // Mass management functions
+  const toggleSelectAll = () => {
+    if (selectedRecordings.length === recordings.length) {
+      setSelectedRecordings([]);
+    } else {
+      setSelectedRecordings(recordings.map(r => r.id));
+    }
+  };
+
+  const toggleSelectRecording = (recordingId) => {
+    if (selectedRecordings.includes(recordingId)) {
+      setSelectedRecordings(selectedRecordings.filter(id => id !== recordingId));
+    } else {
+      setSelectedRecordings([...selectedRecordings, recordingId]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRecordings.length === 0) {
+      toast.error('Выберите записи для удаления');
+      return;
+    }
+
+    setDeleteAction({
+      type: 'bulk',
+      count: selectedRecordings.length,
+      message: `Вы уверены, что хотите удалить ${selectedRecordings.length} записей?`
+    });
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteByDateRange = () => {
+    if (!startDate || !endDate) {
+      toast.error('Укажите дату начала и конца периода');
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+      toast.error('Дата начала не может быть позже даты окончания');
+      return;
+    }
+
+    setDeleteAction({
+      type: 'date-range',
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      cameraId: selectedCamera !== 'all' ? selectedCamera : null,
+      message: `Удалить все записи с ${startDate} по ${endDate}?`
+    });
+    setShowDateRangeDialog(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteByCamera = () => {
+    if (selectedCamera === 'all') {
+      toast.error('Выберите конкретную камеру');
+      return;
+    }
+
+    const cameraName = cameras.find(c => c.id === selectedCamera)?.name || selectedCamera;
+    const count = recordings.length;
+
+    setDeleteAction({
+      type: 'camera',
+      cameraId: selectedCamera,
+      count: count,
+      message: `Удалить все ${count} записей с камеры "${cameraName}"?`
+    });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      let response;
+
+      switch (deleteAction.type) {
+        case 'bulk':
+          response = await axios.post(`${API}/recordings/bulk-delete`, {
+            ids: selectedRecordings
+          });
+          toast.success(`Удалено ${response.data.deleted} записей`);
+          break;
+
+        case 'date-range':
+          response = await axios.post(`${API}/recordings/delete-by-date`, {
+            start_date: deleteAction.startDate,
+            end_date: deleteAction.endDate,
+            camera_id: deleteAction.cameraId
+          });
+          toast.success(`Удалено ${response.data.deleted} записей`);
+          break;
+
+        case 'camera':
+          response = await axios.post(`${API}/recordings/delete-by-camera`, null, {
+            params: { camera_id: deleteAction.cameraId }
+          });
+          toast.success(`Удалено ${response.data.deleted} записей`);
+          break;
+
+        default:
+          break;
+      }
+
+      setSelectedRecordings([]);
+      fetchRecordings();
+    } catch (error) {
+      console.error('Error during bulk delete:', error);
+      toast.error('Ошибка при удалении записей');
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeleteAction(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
