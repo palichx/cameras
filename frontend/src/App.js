@@ -10,11 +10,9 @@ import Settings from './pages/Settings';
 import { Toaster } from './components/ui/sonner';
 import { Video, Settings as SettingsIcon, FileVideo, Activity, BarChart3 } from 'lucide-react';
 
-// Try using window.location.origin to ensure same-origin requests
-const BACKEND_HOST = window.location.hostname === 'localhost' 
-  ? 'http://localhost:8001'
-  : window.location.origin;
-export const API = `${BACKEND_HOST}/api`;
+// Use environment variable for backend URL, fallback to localhost for development
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+export const API = `${BACKEND_URL}/api`;
 
 const Layout = ({ children }) => {
   const [storageStats, setStorageStats] = useState(null);
