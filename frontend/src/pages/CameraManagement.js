@@ -281,6 +281,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
     pre_recording_seconds: camera?.pre_recording_seconds ?? 5.0,
     post_recording_seconds: camera?.post_recording_seconds ?? 5.0,
     motion_cooldown_seconds: camera?.motion_cooldown_seconds ?? 2.0,
+    min_motion_duration: camera?.min_motion_duration ?? 1.0,
     telegram_send_notification: camera?.telegram_send_notification ?? false,
     telegram_send_video: camera?.telegram_send_video ?? false,
     storage_path: camera?.storage_path || '',
