@@ -435,6 +435,81 @@ class CameraRecorder:
         
         return stream_url
     
+    def _create_video_capture_with_retry(self, stream_url, max_retries=3):
+        """Create VideoCapture with retry logic and timeouts"""
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Connecting to camera {self.camera.name} (attempt {attempt + 1}/{max_retries})...")
+                
+                cap = cv2.VideoCapture(stream_url)
+                
+                # Set aggressive timeouts for faster failure detection
+                cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, self.connection_timeout * 1000)
+                cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, self.frame_timeout * 1000)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimal buffer
+                
+                # Test if connection works by reading a frame
+                start_time = time.time()
+                ret, frame = cap.read()
+                connection_time = time.time() - start_time
+                
+                if ret and frame is not None:
+                    logger.info(f"✅ Connected to {self.camera.name} in {connection_time:.2f}s")
+                    self.error_count = 0
+                    self.consecutive_failures = 0
+                    self.last_successful_frame = time.time()
+                    return cap, frame
+                else:
+                    logger.warning(f"Failed to read initial frame from {self.camera.name}")
+                    cap.release()
+                    
+            except Exception as e:
+                logger.error(f"Connection attempt {attempt + 1} failed: {str(e)}")
+            
+            # Wait before retry (exponential backoff)
+            if attempt < max_retries - 1:
+                wait_time = min(2 ** attempt, 10)  # 1s, 2s, 4s, max 10s
+                logger.info(f"Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+        
+        # All attempts failed
+        self.consecutive_failures += 1
+        logger.error(f"❌ Failed to connect to {self.camera.name} after {max_retries} attempts")
+        return None, None
+    
+    def _adapt_quality_based_on_connection(self):
+        """Adapt streaming quality based on connection stability"""
+        if not self.adaptive_quality:
+            return
+        
+        time_since_last_frame = time.time() - self.last_successful_frame
+        
+        # Downgrade quality if connection is unstable
+        if time_since_last_frame > 10 and self.current_quality == "high":
+            self.current_quality = "medium"
+            logger.warning(f"Downgrading quality to MEDIUM for {self.camera.name}")
+        elif time_since_last_frame > 20 and self.current_quality == "medium":
+            self.current_quality = "low"
+            logger.warning(f"Downgrading quality to LOW for {self.camera.name}")
+        
+        # Upgrade quality if connection is stable
+        elif time_since_last_frame < 2 and self.current_quality == "low":
+            self.current_quality = "medium"
+            logger.info(f"Upgrading quality to MEDIUM for {self.camera.name}")
+        elif time_since_last_frame < 1 and self.current_quality == "medium":
+            self.current_quality = "high"
+            logger.info(f"Upgrading quality to HIGH for {self.camera.name}")
+    
+    def _should_process_frame_for_motion(self):
+        """Determine if current frame should be processed for motion detection"""
+        # Adaptive frame skipping based on quality
+        if self.current_quality == "low":
+            return self.frame_counter % 4 == 0  # Process every 4th frame
+        elif self.current_quality == "medium":
+            return self.frame_counter % 2 == 0  # Process every 2nd frame
+        else:  # high quality
+            return True  # Process every frame
+    
     def start(self):
         """Start recording thread"""
         if self.recording_thread and self.recording_thread.is_alive():
