@@ -6,8 +6,9 @@ import Dashboard from './pages/Dashboard';
 import CameraManagement from './pages/CameraManagement';
 import Recordings from './pages/Recordings';
 import MotionEvents from './pages/MotionEvents';
+import Settings from './pages/Settings';
 import { Toaster } from './components/ui/sonner';
-import { Video, Settings, FileVideo, Activity, BarChart3 } from 'lucide-react';
+import { Video, Settings as SettingsIcon, FileVideo, Activity, BarChart3 } from 'lucide-react';
 
 // Try using window.location.origin to ensure same-origin requests
 const BACKEND_HOST = window.location.hostname === 'localhost' 
