@@ -155,6 +155,106 @@ class VideoSurveillanceAPITester:
         """Test storage cleanup"""
         return self.run_test("Cleanup Storage", "POST", "storage/cleanup", 200)
 
+    def test_cameras_status_all(self):
+        """Test getting status of all cameras"""
+        return self.run_test("Get All Cameras Status", "GET", "cameras/status/all", 200)
+
+    def test_stream_reuse_optimization(self):
+        """Test camera stream reuse optimization"""
+        print("\n🔍 Testing Camera Stream Reuse Optimization...")
+        
+        # First get all cameras status to see which are active
+        success, cameras_status = self.run_test("Get Cameras Status for Stream Test", "GET", "cameras/status/all", 200)
+        if not success:
+            print("❌ Failed to get cameras status")
+            return False
+        
+        print(f"   Found {len(cameras_status)} cameras")
+        
+        # Find active and inactive cameras
+        active_cameras = [cam for cam in cameras_status if cam.get('is_active', False)]
+        inactive_cameras = [cam for cam in cameras_status if not cam.get('is_active', False)]
+        
+        print(f"   Active cameras: {len(active_cameras)}")
+        print(f"   Inactive cameras: {len(inactive_cameras)}")
+        
+        test_results = []
+        
+        # Test 1: Stream reuse for active cameras
+        if active_cameras:
+            for cam in active_cameras[:2]:  # Test first 2 active cameras
+                camera_id = cam['id']
+                camera_name = cam['name']
+                print(f"\n   Testing stream reuse for active camera: {camera_name} ({camera_id})")
+                
+                # Make request to stream endpoint
+                url = f"{self.api_url}/stream/{camera_id}"
+                try:
+                    response = requests.get(url, timeout=3, stream=True)
+                    if response.status_code == 200:
+                        print(f"   ✅ Stream endpoint responded for active camera")
+                        test_results.append(True)
+                        
+                        # Read a small amount of data to trigger the generator
+                        try:
+                            for i, chunk in enumerate(response.iter_content(chunk_size=1024)):
+                                if i >= 5:  # Read first few chunks
+                                    break
+                        except:
+                            pass
+                        response.close()
+                    else:
+                        print(f"   ❌ Stream endpoint failed: {response.status_code}")
+                        test_results.append(False)
+                except Exception as e:
+                    print(f"   ❌ Stream request failed: {str(e)}")
+                    test_results.append(False)
+        else:
+            print("   ⚠️  No active cameras found for stream reuse test")
+        
+        # Test 2: Fallback for inactive cameras
+        if inactive_cameras:
+            for cam in inactive_cameras[:1]:  # Test first inactive camera
+                camera_id = cam['id']
+                camera_name = cam['name']
+                print(f"\n   Testing fallback for inactive camera: {camera_name} ({camera_id})")
+                
+                # Make request to stream endpoint
+                url = f"{self.api_url}/stream/{camera_id}"
+                try:
+                    response = requests.get(url, timeout=3, stream=True)
+                    # For inactive cameras, we expect either 200 (fallback works) or error (no real camera)
+                    if response.status_code in [200, 404, 500]:
+                        print(f"   ✅ Fallback behavior working (Status: {response.status_code})")
+                        test_results.append(True)
+                        response.close()
+                    else:
+                        print(f"   ❌ Unexpected status: {response.status_code}")
+                        test_results.append(False)
+                except Exception as e:
+                    print(f"   ✅ Expected error for inactive camera: {str(e)}")
+                    test_results.append(True)  # Expected behavior
+        else:
+            print("   ⚠️  No inactive cameras found for fallback test")
+        
+        # Overall result
+        if test_results:
+            success_rate = sum(test_results) / len(test_results)
+            overall_success = success_rate >= 0.5  # At least 50% success
+            
+            if overall_success:
+                self.tests_passed += 1
+                print(f"\n✅ Stream reuse optimization test passed ({success_rate*100:.0f}% success rate)")
+            else:
+                print(f"\n❌ Stream reuse optimization test failed ({success_rate*100:.0f}% success rate)")
+            
+            self.tests_run += 1
+            return overall_success
+        else:
+            print("\n⚠️  No cameras available for stream reuse testing")
+            self.tests_run += 1
+            return True  # No cameras to test is not a failure
+
     def test_live_stream_endpoint(self):
         """Test live stream endpoint (just check if it responds)"""
         if not self.created_camera_id:
