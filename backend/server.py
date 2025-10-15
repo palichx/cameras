@@ -180,6 +180,7 @@ class CameraCreate(BaseModel):
     motion_detection: bool = True
     motion_sensitivity: float = 0.5
     detection_zones: List[Dict[str, Any]] = []
+    excluded_zones: List[Dict[str, Any]] = []
     pre_recording_seconds: float = 5.0
     post_recording_seconds: float = 5.0
     motion_cooldown_seconds: float = 2.0
