@@ -238,6 +238,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
     motion_cooldown_seconds: camera?.motion_cooldown_seconds ?? 2.0,
     telegram_send_notification: camera?.telegram_send_notification ?? false,
     telegram_send_video: camera?.telegram_send_video ?? false,
+    storage_path: camera?.storage_path || '',
     motion_algorithm: camera?.motion_algorithm ?? 'mog2',
     min_object_area: camera?.min_object_area ?? 500,
     blur_size: camera?.blur_size ?? 21,
