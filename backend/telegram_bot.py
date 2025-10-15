@@ -232,7 +232,19 @@ class VideoSurveillanceBot:
             
             # Calculate time range
             now = datetime.now(timezone.utc)
-            if interval == "1h":
+            if interval == "5m":
+                start_time = now - timedelta(minutes=5)
+                interval_text = "последние 5 минут"
+            elif interval == "10m":
+                start_time = now - timedelta(minutes=10)
+                interval_text = "последние 10 минут"
+            elif interval == "20m":
+                start_time = now - timedelta(minutes=20)
+                interval_text = "последние 20 минут"
+            elif interval == "30m":
+                start_time = now - timedelta(minutes=30)
+                interval_text = "последние 30 минут"
+            elif interval == "1h":
                 start_time = now - timedelta(hours=1)
                 interval_text = "последний час"
             elif interval == "6h":
