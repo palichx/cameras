@@ -24,9 +24,24 @@ import requests
 from PIL import Image
 from io import BytesIO
 from collections import deque
+import concurrent.futures
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Helper function to run async code from thread
+def run_async_from_thread(coro):
+    """Safely run async function from a thread"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+    except Exception as e:
+        logger.error(f"Error running async from thread: {e}")
+        return None
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
