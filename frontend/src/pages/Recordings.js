@@ -310,6 +310,65 @@ const Recordings = () => {
         </div>
       </Card>
 
+      {/* Bulk Actions */}
+      {recordings.length > 0 && (
+        <Card className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="select-all"
+                checked={selectedRecordings.length === recordings.length && recordings.length > 0}
+                onCheckedChange={toggleSelectAll}
+                data-testid="select-all-checkbox"
+              />
+              <label htmlFor="select-all" className="text-sm font-medium text-slate-700 cursor-pointer">
+                Выбрать все ({recordings.length})
+              </label>
+            </div>
+
+            {selectedRecordings.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                Выбрано: {selectedRecordings.length}
+              </Badge>
+            )}
+
+            <div className="flex-1"></div>
+
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={selectedRecordings.length === 0}
+              data-testid="bulk-delete-button"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Удалить выбранные
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDateRangeDialog(true)}
+              data-testid="delete-by-date-button"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Удалить по дате
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeleteByCamera}
+              disabled={selectedCamera === 'all'}
+              data-testid="delete-by-camera-button"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Удалить все с камеры
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Recordings List */}
       {recordings.length === 0 ? (
         <Card className="p-12 text-center">
