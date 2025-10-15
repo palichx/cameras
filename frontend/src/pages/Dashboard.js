@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 const Dashboard = () => {
   const [cameras, setCameras] = useState([]);
+  const [camerasStatus, setCamerasStatus] = useState({});
   const [stats, setStats] = useState({
     totalCameras: 0,
     activeCameras: 0,
