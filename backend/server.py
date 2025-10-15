@@ -105,6 +105,7 @@ class Camera(BaseModel):
     # Telegram notifications
     telegram_send_notification: bool = False  # Send text notification
     telegram_send_video: bool = False  # Send video file
+    storage_path: Optional[str] = None  # Custom storage path for this camera
     status: str = "inactive"  # active, inactive, error
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
