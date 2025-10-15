@@ -51,6 +51,9 @@ class VideoSurveillanceBot:
     
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command - show main menu"""
+        chat_id = str(update.effective_chat.id)
+        logger.info(f"Received /start from chat_id: {chat_id}, allowed: {self.allowed_chat_id}")
+        
         if not self._check_authorized(update):
             await update.message.reply_text("⛔ У вас нет доступа к этому боту.")
             return
