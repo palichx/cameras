@@ -64,6 +64,7 @@ const Recordings = () => {
 
       const response = await axios.get(url);
       setRecordings(response.data);
+      setSelectedRecordings([]); // Clear selection on new fetch
       setLoading(false);
     } catch (error) {
       console.error('Error fetching recordings:', error);
