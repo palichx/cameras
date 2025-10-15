@@ -896,8 +896,13 @@ class CameraRecorder:
     def _convert_to_h264(self, file_path: str):
         """Convert video to H.264 codec for browser compatibility (uses settings from DB)"""
         try:
-            # Get settings from database
-            settings_doc = run_async_in_executor(db.settings.find_one({"id": "system_settings"}, {"_id": 0}))
+            # Get settings from database using sync client
+            from pymongo import MongoClient
+            mongo_url = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
+            sync_client = MongoClient(mongo_url)
+            sync_db = sync_client['video_surveillance']
+            settings_doc = sync_db.settings.find_one({"id": "system_settings"}, {"_id": 0})
+            sync_client.close()
             
             if settings_doc and settings_doc.get('ffmpeg', {}).get('enabled') == False:
                 logger.info(f"H.264 conversion disabled in settings, skipping: {file_path}")
