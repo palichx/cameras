@@ -388,17 +388,24 @@ class VideoSurveillanceBot:
     
     def start(self):
         """Start the bot"""
-        # Create application
-        self.application = Application.builder().token(self.bot_token).build()
+        # Create new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         
-        # Add handlers
-        self.application.add_handler(CommandHandler("start", self.start_command))
-        self.application.add_handler(CallbackQueryHandler(self.button_callback))
-        self.application.add_error_handler(self.error_handler)
-        
-        # Run bot
-        logger.info("Starting Telegram bot...")
-        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
+        try:
+            # Create application
+            self.application = Application.builder().token(self.bot_token).build()
+            
+            # Add handlers
+            self.application.add_handler(CommandHandler("start", self.start_command))
+            self.application.add_handler(CallbackQueryHandler(self.button_callback))
+            self.application.add_error_handler(self.error_handler)
+            
+            # Run bot
+            logger.info("Starting Telegram bot...")
+            self.application.run_polling(allowed_updates=Update.ALL_TYPES)
+        finally:
+            loop.close()
     
     def stop(self):
         """Stop the bot"""
