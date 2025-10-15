@@ -102,36 +102,81 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Optimize video streaming to reuse existing camera connections when opening live views in new windows. Previously, opening a camera in a new window created a duplicate connection to the camera, doubling CPU load. The fix should reuse the existing CameraRecorder instance and share frames between multiple clients."
+user_problem_statement: "Add exclusion zones functionality to prevent false motion detection triggers. Currently, motion detector triggers on timestamp overlay that changes every second. Users need to draw exclusion zones (rectangles and polygons) on camera snapshot using mouse on canvas. Multiple zones can be excluded per camera."
 
 backend:
-  - task: "Reuse existing CameraRecorder for live streams"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Modified get_live_stream endpoint (line 2076-2150) to check if an active recorder exists in active_recorders dict. If recorder exists and is running, use its cached frames (recorder.last_frame) instead of creating new cv2.VideoCapture. Falls back to temporary stream if no active recorder found."
-        - working: true
-          agent: "testing"
-          comment: "✅ STREAM REUSE OPTIMIZATION WORKING CORRECTLY. Tested with 2 cameras (1 active, 1 inactive). Active camera shows '✅ Using cached frames from active recorder: {camera_id}' in logs. Inactive camera shows 'No active recorder for {camera_id}, creating temporary stream' in logs. Multiple concurrent requests to same active camera successfully reuse existing recorder without creating duplicates. Found 8+ stream reuse messages and 2+ fallback messages in backend logs. Overall success rate: 100%. CPU optimization confirmed - no duplicate camera connections created."
-
-frontend:
-  - task: "Live stream loading in new windows"
-    implemented: true
+  - task: "Add excluded_zones field to Camera model"
+    implemented: false
     working: "NA"
-    file: "/app/frontend/src/pages/Dashboard.js"
+    file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Frontend already opens live streams in new windows. Backend changes will make the stream load faster and reuse existing connection. Need to verify that new windows load quickly and don't create duplicate camera connections."
+          comment: "Need to add excluded_zones field to Camera model. Format: List[Dict] with {type: 'rect'/'polygon', coordinates: {...}}. For rect: {x, y, width, height}, for polygon: {points: [[x1,y1], [x2,y2]...]}"
+
+  - task: "Modify MOG2 detection to apply exclusion mask"
+    implemented: false
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Need to modify _detect_motion_mog2() to create mask from excluded_zones and apply it to fg_mask before counting white pixels using np.bitwise_and()"
+
+  - task: "API endpoint for saving exclusion zones"
+    implemented: false
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Need PUT /api/cameras/{camera_id}/excluded-zones endpoint to save zones to database"
+
+  - task: "API endpoint for getting camera snapshot"
+    implemented: false
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Need GET /api/cameras/{camera_id}/snapshot endpoint to get current frame for drawing zones. May already exist, need to check."
+
+frontend:
+  - task: "Add exclusion zones button in CameraManagement"
+    implemented: false
+    working: "NA"
+    file: "/app/frontend/src/pages/CameraManagement.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Add button 'Настроить зоны исключения' in camera settings to open zone editor modal"
+
+  - task: "Create ExclusionZoneEditor component"
+    implemented: false
+    working: "NA"
+    file: "/app/frontend/src/components/ExclusionZoneEditor.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Create modal component with canvas for drawing zones. Tools: draw rectangle, draw polygon. Display all zones with semi-transparent red fill. Buttons: delete zone, clear all, save, cancel."
 
 metadata:
   created_by: "main_agent"
