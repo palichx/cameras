@@ -1184,8 +1184,13 @@ class CameraRecorder:
     def _save_motion_event_sync(self, frame):
         """Save motion event to database (sync version for thread)"""
         try:
-            # Save snapshot
-            snapshot_dir = STORAGE_PATH / self.camera.id / "snapshots"
+            # Save snapshot - use custom storage path if specified
+            if self.camera.storage_path:
+                base_path = Path(self.camera.storage_path)
+            else:
+                base_path = STORAGE_PATH
+            
+            snapshot_dir = base_path / self.camera.id / "snapshots"
             snapshot_dir.mkdir(exist_ok=True, parents=True)
             
             timestamp_dt = datetime.now(timezone.utc)
