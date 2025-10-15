@@ -489,20 +489,60 @@ const Recordings = () => {
           
           {playingRecording && (
             <div className="space-y-4">
-              <div className="bg-black rounded-lg overflow-hidden">
-                <video
-                  key={playingRecording.id}
-                  controls
-                  autoPlay
-                  className="w-full"
-                  style={{ maxHeight: '70vh' }}
-                >
-                  <source 
-                    src={`${API}/recordings/${playingRecording.id}`} 
-                    type="video/mp4" 
-                  />
-                  Ваш браузер не поддерживает воспроизведение видео.
-                </video>
+              <div className="bg-black rounded-lg overflow-hidden relative">
+                {!videoError ? (
+                  <video
+                    key={playingRecording.id}
+                    controls
+                    autoPlay
+                    preload="metadata"
+                    className="w-full"
+                    style={{ maxHeight: '70vh' }}
+                    onError={handleVideoError}
+                  >
+                    <source 
+                      src={`${API}/recordings/${playingRecording.id}`} 
+                      type="video/mp4" 
+                    />
+                    Ваш браузер не поддерживает воспроизведение видео.
+                  </video>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                      <FileVideo className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Не удалось воспроизвести видео
+                    </h3>
+                    <p className="text-slate-400 mb-6 max-w-md">
+                      Видеофайл может быть в несовместимом формате. Рекомендуется скачать файл для просмотра в внешнем плеере.
+                    </p>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="default"
+                        onClick={() => handleDownload(
+                          playingRecording.id,
+                          playingRecording.camera_name,
+                          playingRecording.start_time
+                        )}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Скачать видео
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setVideoError(false)}
+                        className="text-white border-white hover:bg-white/10"
+                      >
+                        Попробовать снова
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-6">
+                      Совет: Установите VLC Media Player или другой универсальный плеер для просмотра
+                    </p>
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center justify-between text-sm text-slate-600 px-2">
@@ -512,19 +552,21 @@ const Recordings = () => {
                 </div>
                 <div className="space-y-1 text-right">
                   <div>💾 Размер: {formatFileSize(playingRecording.file_size)}</div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownload(
-                      playingRecording.id,
-                      playingRecording.camera_name,
-                      playingRecording.start_time
-                    )}
-                    className="mt-1"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Скачать
-                  </Button>
+                  {!videoError && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownload(
+                        playingRecording.id,
+                        playingRecording.camera_name,
+                        playingRecording.start_time
+                      )}
+                      className="mt-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Скачать
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
