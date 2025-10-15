@@ -1264,6 +1264,60 @@ async def get_live_stream(camera_id: str):
 # Include the router in the main app
 app.include_router(api_router)
 
+# Settings API
+@api_router.get("/settings", response_model=SystemSettings)
+async def get_settings():
+    """Get system settings"""
+    settings = await db.settings.find_one({"id": "system_settings"}, {"_id": 0})
+    
+    if not settings:
+        # Create default settings
+        default_settings = SystemSettings()
+        await db.settings.insert_one(default_settings.model_dump())
+        return default_settings
+    
+    return SystemSettings(**settings)
+
+@api_router.put("/settings")
+async def update_settings(settings: SystemSettings):
+    """Update system settings"""
+    settings.updated_at = datetime.now(timezone.utc)
+    settings_dict = settings.model_dump()
+    
+    await db.settings.update_one(
+        {"id": "system_settings"},
+        {"$set": settings_dict},
+        upsert=True
+    )
+    
+    return {"message": "Settings updated successfully", "settings": settings}
+
+@api_router.post("/settings/test-telegram")
+async def test_telegram():
+    """Test Telegram notification"""
+    settings = await db.settings.find_one({"id": "system_settings"}, {"_id": 0})
+    
+    if not settings or not settings.get('telegram', {}).get('enabled'):
+        raise HTTPException(status_code=400, detail="Telegram not configured")
+    
+    telegram = settings['telegram']
+    
+    try:
+        import requests
+        url = f"https://api.telegram.org/bot{telegram['bot_token']}/sendMessage"
+        data = {
+            "chat_id": telegram['chat_id'],
+            "text": "🔔 Тестовое сообщение от системы видеонаблюдения\n\nНастройка работает корректно!"
+        }
+        response = requests.post(url, json=data, timeout=10)
+        
+        if response.status_code == 200:
+            return {"success": True, "message": "Сообщение отправлено успешно"}
+        else:
+            return {"success": False, "message": f"Ошибка: {response.text}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка отправки: {str(e)}")
+
 # CORS Configuration - Allow all origins
 app.add_middleware(
     CORSMiddleware,
