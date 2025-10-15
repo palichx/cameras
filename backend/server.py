@@ -1054,17 +1054,81 @@ class CameraRecorder:
             return None
     
     def _detect_motion(self, frame) -> bool:
-        """Detect motion in frame using frame differencing"""
+        """Detect motion in frame using configured algorithm"""
+        
+        if self.camera.motion_algorithm in ["mog2", "knn"]:
+            return self._detect_motion_bg_subtraction(frame)
+        else:
+            return self._detect_motion_basic(frame)
+    
+    def _detect_motion_bg_subtraction(self, frame) -> bool:
+        """Advanced motion detection using Background Subtraction (MOG2/KNN)"""
+        # Apply background subtractor
+        fg_mask = self.bg_subtractor.apply(frame)
+        
+        # Remove shadows (value 127 in MOG2)
+        if self.camera.detect_shadows:
+            fg_mask[fg_mask == 127] = 0
+        
+        # Apply detection zones if specified
+        if self.camera.detection_zones:
+            mask = np.zeros(fg_mask.shape, dtype=np.uint8)
+            for zone in self.camera.detection_zones:
+                points = np.array([[p['x'], p['y']] for p in zone['points']], dtype=np.int32)
+                cv2.fillPoly(mask, [points], 255)
+            fg_mask = cv2.bitwise_and(fg_mask, mask)
+        
+        # Morphological operations to reduce noise
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel)  # Remove noise
+        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, kernel)  # Fill holes
+        
+        # Find contours and filter by minimum area
+        contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        significant_motion = 0
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area >= self.camera.min_object_area:
+                significant_motion += area
+        
+        # Calculate motion percentage
+        total_pixels = fg_mask.shape[0] * fg_mask.shape[1]
+        motion_percentage = significant_motion / total_pixels
+        
+        # Dynamic threshold based on sensitivity
+        threshold = 0.001 + (1 - self.camera.motion_sensitivity) * 0.009  # 0.001 to 0.01
+        
+        # Temporal filtering - require motion in multiple consecutive frames
+        current_motion = motion_percentage > threshold
+        self.motion_buffer.append(current_motion)
+        
+        # Motion detected if present in at least 3 of last 5 frames
+        motion_count = sum(self.motion_buffer)
+        return motion_count >= 3
+    
+    def _detect_motion_basic(self, frame) -> bool:
+        """Basic motion detection using improved frame differencing"""
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (21, 21), 0)
+        
+        # Use camera-specific blur size (must be odd)
+        blur_size = self.camera.blur_size if self.camera.blur_size % 2 == 1 else self.camera.blur_size + 1
+        gray = cv2.GaussianBlur(gray, (blur_size, blur_size), 0)
         
         if self.last_frame is None:
             self.last_frame = gray
             return False
         
+        # Frame differencing
         frame_delta = cv2.absdiff(self.last_frame, gray)
-        thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
-        thresh = cv2.dilate(thresh, None, iterations=2)
+        
+        # Threshold with camera-specific value
+        thresh = cv2.threshold(frame_delta, self.camera.motion_threshold, 255, cv2.THRESH_BINARY)[1]
+        
+        # Morphological operations
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         
         # Apply detection zones if specified
         if self.camera.detection_zones:
@@ -1074,16 +1138,35 @@ class CameraRecorder:
                 cv2.fillPoly(mask, [points], 255)
             thresh = cv2.bitwise_and(thresh, mask)
         
+        # Find contours and filter by minimum area
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        significant_motion = 0
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area >= self.camera.min_object_area:
+                significant_motion += area
+        
         # Calculate motion percentage
-        motion_pixels = np.sum(thresh > 0)
         total_pixels = thresh.shape[0] * thresh.shape[1]
-        motion_percentage = motion_pixels / total_pixels
+        motion_percentage = significant_motion / total_pixels
         
-        # Adjust sensitivity threshold
-        threshold = 0.01 + (1 - self.camera.motion_sensitivity) * 0.09  # 0.01 to 0.1
+        # Update background gradually if no motion
+        threshold = 0.005 + (1 - self.camera.motion_sensitivity) * 0.015  # 0.005 to 0.02
         
-        self.last_frame = gray
-        return motion_percentage > threshold
+        if motion_percentage < threshold:
+            # Gradually update background
+            self.last_frame = cv2.addWeighted(self.last_frame, 0.9, gray, 0.1, 0)
+        else:
+            self.last_frame = gray
+        
+        # Temporal filtering
+        current_motion = motion_percentage > threshold
+        self.motion_buffer.append(current_motion)
+        
+        # Motion detected if present in at least 3 of last 5 frames
+        motion_count = sum(self.motion_buffer)
+        return motion_count >= 3
     
     def _save_motion_event_sync(self, frame):
         """Save motion event to database (sync version for thread)"""
