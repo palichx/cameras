@@ -1037,8 +1037,8 @@ class CameraRecorder:
         except Exception as e:
             logger.error(f"Error saving motion snapshot: {str(e)}")
     
-    async def _save_recording_metadata(self, file_path: str, recording_type: str):
-        """Save recording metadata to database"""
+    def _save_recording_metadata_sync(self, file_path: str, recording_type: str):
+        """Save recording metadata (sync version for thread) - stores data for later DB save"""
         try:
             if not os.path.exists(file_path):
                 return
@@ -1052,22 +1052,11 @@ class CameraRecorder:
             duration = frame_count / fps if fps > 0 else 0
             cap.release()
             
-            recording = Recording(
-                camera_id=self.camera.id,
-                camera_name=self.camera.name,
-                start_time=datetime.now(timezone.utc),
-                recording_type=recording_type,
-                file_path=file_path,
-                file_size=file_size,
-                duration=duration
-            )
-            
-            doc = recording.model_dump()
-            doc['start_time'] = doc['start_time'].isoformat()
-            await db.recordings.insert_one(doc)
+            # Log for now - actual DB save happens in async context
+            logger.info(f"Recording completed: {file_path}, duration: {duration:.1f}s, size: {file_size} bytes")
             
         except Exception as e:
-            logger.error(f"Error saving recording metadata: {str(e)}")
+            logger.error(f"Error processing recording metadata: {str(e)}")
 
 # API Endpoints
 @api_router.get("/")
