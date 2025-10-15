@@ -107,39 +107,48 @@ user_problem_statement: "Implement mass management functionality for recordings 
 backend:
   - task: "Bulk delete recordings endpoint"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "POST /api/recordings/bulk-delete endpoint already exists, accepts {ids: []} for multiple deletion"
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED: Bulk delete API working correctly. Successfully deleted 3 recordings by IDs, verified deletion from database. Proper error handling for empty IDs array (400 status). API returns correct deleted count and removes both files and database records."
   
   - task: "Delete recordings by date range endpoint"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "POST /api/recordings/delete-by-date endpoint already exists, accepts {start_date, end_date, camera_id}"
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED: Date range delete API working correctly. Successfully tested with both camera_id filter and without. API accepts ISO date format, returns correct deleted count. Proper error handling for missing required fields (400 status). Minor: Invalid date format doesn't return 400 but handles gracefully with 0 deletions."
   
   - task: "Delete recordings by camera endpoint"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "POST /api/recordings/delete-by-camera endpoint already exists, accepts camera_id as query parameter"
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED: Delete by camera API working correctly. Successfully tested with existing camera ID, returns correct deleted count (0 for camera with no recordings). API handles non-existent camera IDs gracefully. Verified no recordings remain after deletion."
 
 frontend:
   - task: "Checkbox selection for recordings"
