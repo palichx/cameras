@@ -1706,6 +1706,96 @@ async def stop_camera(camera_id: str):
     
     return {"message": "Camera stopped"}
 
+@api_router.get("/cameras/{camera_id}/snapshot")
+async def get_camera_snapshot(camera_id: str):
+    """Get current snapshot from camera for zone drawing"""
+    camera = await db.cameras.find_one({"id": camera_id}, {"_id": 0})
+    
+    if not camera:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    
+    # Try to get frame from active recorder first
+    if camera_id in active_recorders:
+        recorder = active_recorders[camera_id]
+        frame = recorder.last_frame
+        
+        if frame is not None:
+            # Encode frame as JPEG
+            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            return Response(content=buffer.tobytes(), media_type="image/jpeg")
+    
+    # If no active recorder, try to get a temporary snapshot
+    if isinstance(camera['created_at'], str):
+        camera['created_at'] = datetime.fromisoformat(camera['created_at'])
+    
+    cam = Camera(**camera)
+    temp_recorder = CameraRecorder(cam)
+    
+    try:
+        stream_url = temp_recorder.build_stream_url()
+        
+        if cam.stream_type == "rtsp":
+            cap = cv2.VideoCapture(stream_url)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            
+            # Try to read a frame
+            for _ in range(10):
+                ret, frame = cap.read()
+                if ret and frame is not None:
+                    cap.release()
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    return Response(content=buffer.tobytes(), media_type="image/jpeg")
+            
+            cap.release()
+        
+        elif cam.stream_type == "http-mjpeg":
+            frame = temp_recorder._get_http_mjpeg_frame(stream_url)
+            if frame is not None:
+                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                return Response(content=buffer.tobytes(), media_type="image/jpeg")
+        
+        elif cam.stream_type == "http-snapshot":
+            auth = None
+            if cam.username and cam.password:
+                auth = (cam.username, cam.password)
+            frame = temp_recorder._get_http_snapshot(stream_url, auth)
+            if frame is not None:
+                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                return Response(content=buffer.tobytes(), media_type="image/jpeg")
+    
+    except Exception as e:
+        logger.error(f"Error getting snapshot for camera {camera_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get camera snapshot")
+    
+    raise HTTPException(status_code=500, detail="Failed to get camera snapshot")
+
+@api_router.put("/cameras/{camera_id}/excluded-zones")
+async def update_excluded_zones(camera_id: str, zones: List[Dict[str, Any]]):
+    """Update exclusion zones for motion detection"""
+    camera = await db.cameras.find_one({"id": camera_id}, {"_id": 0})
+    
+    if not camera:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    
+    # Update excluded zones in database
+    await db.cameras.update_one({"id": camera_id}, {"$set": {"excluded_zones": zones}})
+    
+    # Restart recorder to apply new settings
+    if camera_id in active_recorders:
+        active_recorders[camera_id].stop()
+        del active_recorders[camera_id]
+        
+        camera['excluded_zones'] = zones
+        if isinstance(camera['created_at'], str):
+            camera['created_at'] = datetime.fromisoformat(camera['created_at'])
+        
+        updated_camera = Camera(**camera)
+        recorder = CameraRecorder(updated_camera)
+        recorder.start()
+        active_recorders[camera_id] = recorder
+    
+    return {"message": "Exclusion zones updated successfully", "zones": zones}
+
 @api_router.get("/cameras/status/all")
 async def get_cameras_status():
     """Get real-time status of all cameras including recording and motion detection state"""
