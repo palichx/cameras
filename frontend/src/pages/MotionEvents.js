@@ -3,9 +3,22 @@ import axios from 'axios';
 import { API } from '../App';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent } from '../components/ui/dialog';
-import { Activity, Image as ImageIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Checkbox } from '../components/ui/checkbox';
+import { Input } from '../components/ui/input';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '../components/ui/alert-dialog';
+import { Activity, Image as ImageIcon, Trash2, Calendar, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MotionEvents = () => {
