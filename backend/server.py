@@ -222,21 +222,52 @@ class CameraRecorder:
         return None
     
     def _record_loop(self):
-        """Main recording loop"""
+        """Main recording loop with smart reconnection"""
         while not self.stop_event.is_set():
             try:
+                success = False
+                
                 if self.camera.stream_type == "rtsp":
-                    self._record_rtsp()
+                    success = self._record_rtsp()
                 elif self.camera.stream_type == "http-mjpeg":
-                    self._record_http_mjpeg()
+                    success = self._record_http_mjpeg()
                 elif self.camera.stream_type == "http-snapshot":
-                    self._record_http_snapshot()
+                    success = self._record_http_snapshot()
                 else:
                     logger.error(f"Unknown stream type: {self.camera.stream_type}")
                     time.sleep(5)
+                    continue
+                
+                if success:
+                    # Reset error count on success
+                    self.error_count = 0
+                    self.reconnect_delay = 5
+                else:
+                    # Increment error count
+                    self.error_count += 1
+                    
+                    # Check if exceeded max errors
+                    if self.error_count >= self.max_errors:
+                        logger.error(f"Camera {self.camera.name} exceeded max errors ({self.max_errors}). Stopping recorder.")
+                        break
+                    
+                    # Exponential backoff with jitter
+                    delay = min(self.reconnect_delay * (2 ** (self.error_count - 1)), self.max_reconnect_delay)
+                    jitter = delay * 0.1  # 10% jitter
+                    actual_delay = delay + (jitter * (2 * (time.time() % 1) - 1))
+                    
+                    logger.warning(f"Camera {self.camera.name} connection failed (attempt {self.error_count}/{self.max_errors}). "
+                                 f"Retrying in {actual_delay:.1f} seconds...")
+                    time.sleep(actual_delay)
                     
             except Exception as e:
                 logger.error(f"Error in recording loop for camera {self.camera.name}: {str(e)}")
+                self.error_count += 1
+                
+                if self.error_count >= self.max_errors:
+                    logger.error(f"Camera {self.camera.name} exceeded max errors. Stopping recorder.")
+                    break
+                
                 time.sleep(5)
     
     def _record_rtsp(self):
