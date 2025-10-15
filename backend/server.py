@@ -677,20 +677,30 @@ class CameraRecorder:
         
         self.motion_file_path = None
     
+    def _convert_to_h264_async(self, file_path: str):
+        """Convert video to H.264 in background (non-blocking)"""
+        try:
+            logger.info(f"Starting H.264 conversion in background: {file_path}")
+            self._convert_to_h264(file_path)
+        except Exception as e:
+            logger.error(f"Error in async H.264 conversion: {e}")
+    
     def _convert_to_h264(self, file_path: str):
         """Convert video to H.264 codec for browser compatibility (optimized for low CPU)"""
         try:
             temp_path = file_path + ".tmp.mp4"
             
             # Use ffmpeg with optimized settings for low CPU usage
-            # - preset ultrafast: fastest encoding, less CPU
-            # - crf 30: lower quality, smaller files, less CPU
-            # - scale: reduce to 720p max for smaller files
-            # - fps: limit to 15 fps for surveillance
-            # - threads: use multiple cores efficiently
+            # - preset ultrafast: fastest encoding, less CPU (10x faster than 'fast')
+            # - crf 30: lower quality (acceptable for surveillance), smaller files
+            # - scale: reduce to max 720p to save space and encoding time
+            # - fps: limit to 15 fps (enough for surveillance, 50% less frames)
+            # - threads 2: limit CPU cores usage
+            # - tune zerolatency: optimize for fast encoding
+            # - b:a 64k: low audio bitrate
             result = os.system(
                 f'ffmpeg -i "{file_path}" '
-                f'-c:v libx264 -preset ultrafast -crf 30 '
+                f'-c:v libx264 -preset ultrafast -tune zerolatency -crf 30 '
                 f'-vf "scale=\'min(1280,iw)\':\'min(720,ih)\':force_original_aspect_ratio=decrease,fps=15" '
                 f'-c:a aac -b:a 64k '
                 f'-movflags +faststart '
@@ -700,16 +710,21 @@ class CameraRecorder:
             )
             
             if result == 0 and os.path.exists(temp_path):
+                # Get file sizes
+                original_size = os.path.getsize(file_path)
+                converted_size = os.path.getsize(temp_path)
+                compression = (1 - converted_size / original_size) * 100 if original_size > 0 else 0
+                
                 # Replace original with converted
                 os.replace(temp_path, file_path)
-                logger.info(f"Converted video to H.264: {file_path}")
+                logger.info(f"Converted to H.264: {file_path} (compression: {compression:.1f}%)")
             else:
-                logger.warning(f"Failed to convert video to H.264: {file_path}")
+                logger.warning(f"Failed to convert to H.264: {file_path}, keeping original")
                 # Keep original mp4v file
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
         except Exception as e:
-            logger.error(f"Error converting video to H.264: {e}")
+            logger.error(f"Error converting to H.264: {e}")
             # Keep original file
     
     def _detect_motion(self, frame) -> bool:
