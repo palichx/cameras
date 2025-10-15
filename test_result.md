@@ -105,72 +105,33 @@
 user_problem_statement: "Add minimum motion duration parameter to ignore brief motion events. Currently, short movements (birds, shadows, etc.) trigger false alarms. Add 'min_motion_duration' parameter (in seconds) to only trigger recording/notifications if motion lasts longer than specified duration. Default: 1 second, Max: 10 seconds."
 
 backend:
-  - task: "Add excluded_zones field to Camera model"
-    implemented: true
-    working: true
+  - task: "Add min_motion_duration field to Camera model"
+    implemented: false
+    working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Added excluded_zones field to Camera, CameraCreate, and CameraUpdate models. Format: List[Dict] with {type: 'rect'/'polygon', coordinates: {...}}"
-        - working: true
-          agent: "testing"
-          comment: "✅ TESTED: Camera model correctly accepts excluded_zones field. Verified through API calls that zones are properly saved to database with correct structure for both rectangles and polygons."
+          comment: "Need to add min_motion_duration: float = 1.0 field to Camera, CameraCreate, CameraUpdate models"
 
-  - task: "Modify MOG2 detection to apply exclusion mask"
-    implemented: true
-    working: true
+  - task: "Implement motion duration tracking in detection logic"
+    implemented: false
+    working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Modified _detect_motion_bg_subtraction() to create exclusion mask from excluded_zones. Mask is applied to fg_mask using cv2.bitwise_and(). Supports both rectangles and polygons. Coordinates are scaled to match resized frame (0.5x)."
-        - working: true
-          agent: "testing"
-          comment: "✅ TESTED: Motion detection code correctly implements exclusion zones. Verified that exclusion mask is created from zones and applied to foreground mask using cv2.bitwise_and(). Camera recorder restarts when zones are updated, ensuring new settings are applied."
-
-  - task: "API endpoint for saving exclusion zones"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Added PUT /api/cameras/{camera_id}/excluded-zones endpoint. Saves zones to database and restarts recorder to apply new settings."
-        - working: true
-          agent: "testing"
-          comment: "✅ TESTED: PUT /api/cameras/{camera_id}/excluded-zones endpoint working perfectly. Successfully tested: 1) Rectangle zones with coordinates {x,y,width,height}, 2) Polygon zones with points array, 3) Multiple mixed zones (2 rectangles + 1 polygon), 4) Empty zones array (clearing), 5) Error handling for non-existent camera (404). All zones correctly saved to database and camera recorder restarts as expected."
-
-  - task: "API endpoint for getting camera snapshot"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Added GET /api/cameras/{camera_id}/snapshot endpoint. Returns current frame from active recorder or temporary snapshot. Supports RTSP, HTTP-MJPEG, and HTTP-snapshot streams."
-        - working: false
-          agent: "testing"
-          comment: "❌ INITIAL TEST FAILED: Endpoint returned 500 error due to missing Response import in server.py"
-        - working: true
-          agent: "testing"
-          comment: "✅ FIXED & TESTED: Added missing 'Response' import to server.py. GET /api/cameras/{camera_id}/snapshot now working correctly. Returns valid JPEG images (Content-Type: image/jpeg) from active camera recorder. Tested with demo camera (6257 bytes image). Error handling works correctly (404 for non-existent cameras)."
+          comment: "Need to track motion start time and only trigger recording/notification if motion duration >= min_motion_duration"
 
 frontend:
-  - task: "Add exclusion zones button in CameraManagement"
-    implemented: true
+  - task: "Add min_motion_duration slider in CameraManagement"
+    implemented: false
     working: "NA"
     file: "/app/frontend/src/pages/CameraManagement.js"
     stuck_count: 0
@@ -179,19 +140,7 @@ frontend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Added button with MapPin icon to open zone editor modal. Button positioned between toggle and settings buttons."
-
-  - task: "Create ExclusionZoneEditor component"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/components/ExclusionZoneEditor.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Created modal component with canvas for drawing zones. Features: loads camera snapshot, draw rectangles (drag), draw polygons (click points, double-click finish), display zones with semi-transparent red fill, delete zone, clear all, save/cancel buttons. Uses HTML5 Canvas API for drawing."
+          comment: "Add slider for min_motion_duration with range 0.1-10 seconds, default 1 second"
 
 metadata:
   created_by: "main_agent"
