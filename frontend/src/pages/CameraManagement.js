@@ -79,6 +79,25 @@ const CameraManagement = () => {
     }
   };
 
+  const handleOpenZoneEditor = (camera) => {
+    setZoneEditorCamera(camera);
+    setShowZoneEditor(true);
+  };
+
+  const handleSaveZones = async (zones) => {
+    if (!zoneEditorCamera) return;
+    
+    try {
+      await axios.put(`${API}/cameras/${zoneEditorCamera.id}/excluded-zones`, zones);
+      toast.success('Зоны исключения сохранены');
+      fetchCameras();
+    } catch (error) {
+      console.error('Error saving excluded zones:', error);
+      toast.error('Ошибка сохранения зон');
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
