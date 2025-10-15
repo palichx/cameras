@@ -443,6 +443,8 @@ def main():
         ("Get Camera by ID", tester.test_get_camera_by_id),
         ("Update Camera", tester.test_update_camera),
         ("Start Camera", tester.test_start_camera),
+        ("Cameras Status All", tester.test_cameras_status_all),
+        ("Stream Reuse Optimization", tester.test_stream_reuse_optimization),
         ("Stop Camera", tester.test_stop_camera),
         ("Get Recordings", tester.test_get_recordings),
         ("Get Filtered Recordings", tester.test_get_recordings_with_filters),
