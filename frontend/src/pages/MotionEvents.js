@@ -62,6 +62,7 @@ const MotionEvents = () => {
 
       const response = await axios.get(url);
       setEvents(response.data);
+      setSelectedEvents([]); // Clear selection on new fetch
       setLoading(false);
     } catch (error) {
       console.error('Error fetching events:', error);
