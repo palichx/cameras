@@ -383,7 +383,7 @@ class CameraRecorder:
         self.current_quality = "high"  # high, medium, low
         
         # Performance optimization
-        self.frame_skip = 2  # Process every Nth frame for motion detection
+        self.frame_skip = 3  # Process every 3rd frame for motion detection (was 2)
         self.frame_counter = 0
         
         # H.264 conversion settings
