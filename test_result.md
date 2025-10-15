@@ -106,7 +106,7 @@ user_problem_statement: "Add exclusion zones functionality to prevent false moti
 
 backend:
   - task: "Add excluded_zones field to Camera model"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
@@ -115,10 +115,10 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Need to add excluded_zones field to Camera model. Format: List[Dict] with {type: 'rect'/'polygon', coordinates: {...}}. For rect: {x, y, width, height}, for polygon: {points: [[x1,y1], [x2,y2]...]}"
+          comment: "Added excluded_zones field to Camera, CameraCreate, and CameraUpdate models. Format: List[Dict] with {type: 'rect'/'polygon', coordinates: {...}}"
 
   - task: "Modify MOG2 detection to apply exclusion mask"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
@@ -127,10 +127,10 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Need to modify _detect_motion_mog2() to create mask from excluded_zones and apply it to fg_mask before counting white pixels using np.bitwise_and()"
+          comment: "Modified _detect_motion_bg_subtraction() to create exclusion mask from excluded_zones. Mask is applied to fg_mask using cv2.bitwise_and(). Supports both rectangles and polygons. Coordinates are scaled to match resized frame (0.5x)."
 
   - task: "API endpoint for saving exclusion zones"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
@@ -139,10 +139,10 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Need PUT /api/cameras/{camera_id}/excluded-zones endpoint to save zones to database"
+          comment: "Added PUT /api/cameras/{camera_id}/excluded-zones endpoint. Saves zones to database and restarts recorder to apply new settings."
 
   - task: "API endpoint for getting camera snapshot"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
@@ -151,7 +151,7 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Need GET /api/cameras/{camera_id}/snapshot endpoint to get current frame for drawing zones. May already exist, need to check."
+          comment: "Added GET /api/cameras/{camera_id}/snapshot endpoint. Returns current frame from active recorder or temporary snapshot. Supports RTSP, HTTP-MJPEG, and HTTP-snapshot streams."
 
 frontend:
   - task: "Add exclusion zones button in CameraManagement"
