@@ -548,8 +548,14 @@ class CameraRecorder:
                 if len(self.pre_record_buffer) > pre_buffer_frames:
                     self.pre_record_buffer.popleft()
                 
-                # Detect motion
-                motion_detected = self._detect_motion(frame)
+                # Detect motion (skip frames for performance)
+                motion_detected = False
+                self.frame_counter += 1
+                if self.frame_counter % self.frame_skip == 0:
+                    motion_detected = self._detect_motion(frame)
+                elif self.motion_state == "recording":
+                    # Always check if we're already recording
+                    motion_detected = self._detect_motion(frame)
                 
                 if motion_detected:
                     self.last_motion_time = time.time()
