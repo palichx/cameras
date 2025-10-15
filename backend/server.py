@@ -165,6 +165,72 @@ class SystemSettings(BaseModel):
     telegram: TelegramSettings = Field(default_factory=TelegramSettings)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Telegram helper functions
+async def send_telegram_notification(camera_name: str, timestamp: datetime, video_path: str = None):
+    """Send notification and/or video to Telegram"""
+    try:
+        # Get settings from database
+        settings = await db.settings.find_one({"id": "system_settings"}, {"_id": 0})
+        
+        if not settings or not settings.get('telegram', {}).get('enabled'):
+            logger.info("Telegram not enabled, skipping notification")
+            return
+        
+        telegram = settings['telegram']
+        bot_token = telegram.get('bot_token')
+        chat_id = telegram.get('chat_id')
+        
+        if not bot_token or not chat_id:
+            logger.info("Telegram credentials not configured, skipping notification")
+            return
+        
+        # Format message
+        time_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        message = f"Движение - {time_str} - {camera_name}"
+        
+        # Send video if path provided
+        if video_path and os.path.exists(video_path):
+            try:
+                url = f"https://api.telegram.org/bot{bot_token}/sendVideo"
+                
+                with open(video_path, 'rb') as video_file:
+                    files = {'video': video_file}
+                    data = {
+                        'chat_id': chat_id,
+                        'caption': message
+                    }
+                    
+                    response = requests.post(url, data=data, files=files, timeout=60)
+                    
+                    if response.status_code == 200:
+                        logger.info(f"Video sent to Telegram successfully: {camera_name}")
+                    else:
+                        logger.error(f"Failed to send video to Telegram: {response.text}")
+                        
+            except Exception as e:
+                logger.error(f"Error sending video to Telegram: {str(e)}")
+        else:
+            # Send text message only
+            try:
+                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                data = {
+                    'chat_id': chat_id,
+                    'text': message
+                }
+                
+                response = requests.post(url, json=data, timeout=10)
+                
+                if response.status_code == 200:
+                    logger.info(f"Notification sent to Telegram successfully: {camera_name}")
+                else:
+                    logger.error(f"Failed to send notification to Telegram: {response.text}")
+                    
+            except Exception as e:
+                logger.error(f"Error sending notification to Telegram: {str(e)}")
+                
+    except Exception as e:
+        logger.error(f"Error in send_telegram_notification: {str(e)}")
+
 # Camera Recorder Class
 class CameraRecorder:
     def __init__(self, camera: Camera):
