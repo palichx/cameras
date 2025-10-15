@@ -207,6 +207,7 @@ class CameraUpdate(BaseModel):
     motion_detection: Optional[bool] = None
     motion_sensitivity: Optional[float] = None
     detection_zones: Optional[List[Dict[str, Any]]] = None
+    excluded_zones: Optional[List[Dict[str, Any]]] = None
     pre_recording_seconds: Optional[float] = None
     post_recording_seconds: Optional[float] = None
     motion_cooldown_seconds: Optional[float] = None
