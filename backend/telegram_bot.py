@@ -253,7 +253,7 @@ class VideoSurveillanceBot:
                 "camera_id": camera_id,
                 "recording_type": "motion",
                 "start_time": {"$gte": start_time.isoformat()}
-            }, {"_id": 0}).sort("start_time", -1).limit(10))
+            }, {"_id": 0}).sort("start_time", 1).limit(50))  # Sort by time, limit 50
             
             if not recordings:
                 keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data=f"select_camera_{camera_id}")]]
@@ -268,73 +268,105 @@ class VideoSurveillanceBot:
                 return
             
             await query.edit_message_text(
-                f"📤 Найдено {len(recordings)} записей. Конвертирую и отправляю..."
+                f"📤 Найдено {len(recordings)} записей. Объединяю и конвертирую..."
             )
             
-            # Import conversion function
-            import sys
-            sys.path.append('/app/backend')
-            from server import CameraRecorder, Camera
+            # Collect valid video files
+            valid_files = []
+            for recording in recordings:
+                file_path = recording.get('file_path')
+                if file_path and os.path.exists(file_path):
+                    valid_files.append(file_path)
+                else:
+                    logger.warning(f"Video file not found: {file_path}")
             
-            # Send each video
-            sent_count = 0
-            for i, recording in enumerate(recordings, 1):
+            if not valid_files:
+                keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data=f"select_camera_{camera_id}")]]
+                await query.edit_message_text(
+                    f"❌ Видеофайлы не найдены на диске.",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+            
+            logger.info(f"Merging {len(valid_files)} videos for camera {camera_name}")
+            
+            # Merge and convert videos
+            merged_video = self._merge_and_convert_videos(valid_files, camera_name)
+            
+            if merged_video and os.path.exists(merged_video):
+                # Format time range
+                first_time = recordings[0].get('start_time', '')
+                last_time = recordings[-1].get('start_time', '')
+                
+                if isinstance(first_time, str):
+                    dt_first = datetime.fromisoformat(first_time.replace('Z', '+00:00'))
+                    time_first = dt_first.strftime('%d.%m.%Y %H:%M')
+                else:
+                    time_first = str(first_time)
+                
+                if isinstance(last_time, str):
+                    dt_last = datetime.fromisoformat(last_time.replace('Z', '+00:00'))
+                    time_last = dt_last.strftime('%H:%M')
+                else:
+                    time_last = str(last_time)
+                
+                # Calculate total duration
+                total_duration = sum(r.get('duration', 0) for r in recordings)
+                
+                caption = (
+                    f"🎥 {camera_name}\n"
+                    f"📅 {time_first} - {time_last}\n"
+                    f"📊 Объединено: {len(valid_files)} записей\n"
+                    f"⏱️ Общая длительность: {total_duration:.1f}с"
+                )
+                
+                # Send video
                 try:
-                    file_path = recording.get('file_path')
-                    if not file_path or not os.path.exists(file_path):
-                        logger.warning(f"Video file not found: {file_path}")
-                        continue
+                    file_size = os.path.getsize(merged_video)
+                    await query.edit_message_text(f"📤 Отправка видео ({file_size / 1024 / 1024:.1f} MB)...")
                     
-                    # Create temporary telegram video
-                    temp_video = self._convert_video_for_telegram(file_path)
-                    
-                    if temp_video and os.path.exists(temp_video):
-                        # Format timestamp
-                        start_time_str = recording.get('start_time', '')
-                        if isinstance(start_time_str, str):
-                            dt = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
-                            time_str = dt.strftime('%d.%m.%Y %H:%M:%S')
-                        else:
-                            time_str = str(start_time_str)
-                        
-                        caption = (
-                            f"🎥 {camera_name}\n"
-                            f"📅 {time_str}\n"
-                            f"⏱️ {recording.get('duration', 0):.1f}с"
+                    with open(merged_video, 'rb') as video_file:
+                        await query.message.reply_video(
+                            video=video_file,
+                            caption=caption,
+                            supports_streaming=True,
+                            read_timeout=60,
+                            write_timeout=60
                         )
-                        
-                        # Send video
-                        with open(temp_video, 'rb') as video_file:
-                            await query.message.reply_video(
-                                video=video_file,
-                                caption=caption,
-                                supports_streaming=True
-                            )
-                        
-                        # Clean up temp file
-                        os.remove(temp_video)
-                        sent_count += 1
-                        
-                        # Add delay to avoid hitting rate limits
-                        if i < len(recordings):
-                            await asyncio.sleep(1)
+                    
+                    keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data=f"select_camera_{camera_id}")]]
+                    await query.message.reply_text(
+                        f"✅ Видео успешно отправлено!",
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
                     
                 except Exception as e:
-                    logger.error(f"Error sending video {i}: {e}")
-                    continue
-            
-            # Send summary
-            keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data=f"select_camera_{camera_id}")]]
-            await query.message.reply_text(
-                f"✅ Отправлено {sent_count} из {len(recordings)} видео.",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
+                    logger.error(f"Error sending video: {e}")
+                    keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data=f"select_camera_{camera_id}")]]
+                    await query.message.reply_text(
+                        f"❌ Ошибка отправки видео: {str(e)}\n"
+                        f"Файл может быть слишком большим (лимит Telegram: 50MB для ботов).",
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
+                finally:
+                    # Clean up temp file
+                    try:
+                        os.remove(merged_video)
+                        logger.info(f"Cleaned up merged video: {merged_video}")
+                    except Exception as e:
+                        logger.error(f"Error cleaning up: {e}")
+            else:
+                keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data=f"select_camera_{camera_id}")]]
+                await query.message.reply_text(
+                    f"❌ Ошибка при объединении видео.",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
             
         except Exception as e:
-            logger.error(f"Error in send_videos: {e}")
+            logger.error(f"Error in send_videos: {e}", exc_info=True)
             keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data=f"select_camera_{camera_id}")]]
             await query.message.reply_text(
-                f"❌ Ошибка при отправке видео: {str(e)}",
+                f"❌ Ошибка: {str(e)}",
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
     
