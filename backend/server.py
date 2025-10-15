@@ -1388,6 +1388,11 @@ class CameraRecorder:
                 exclusion_mask = np.ones(fg_mask.shape, dtype=np.uint8) * 255
                 height, width = fg_mask.shape
                 
+                # Log exclusion zones application (only log once per camera start)
+                if not hasattr(self, '_exclusion_logged'):
+                    logger.info(f"🚫 Applying {len(self.camera.excluded_zones)} exclusion zones for {self.camera.name}")
+                    self._exclusion_logged = True
+                
                 for zone in self.camera.excluded_zones:
                     zone_type = zone.get('type', 'rect')
                     
@@ -1412,8 +1417,20 @@ class CameraRecorder:
                             scaled_points = np.array([[int(p[0] * 0.5), int(p[1] * 0.5)] for p in points], dtype=np.int32)
                             cv2.fillPoly(exclusion_mask, [scaled_points], 0)
                 
+                # Count motion pixels before and after exclusion for comparison
+                motion_pixels_before = cv2.countNonZero(fg_mask)
+                
                 # Apply exclusion mask to foreground mask
                 fg_mask = cv2.bitwise_and(fg_mask, exclusion_mask)
+                
+                motion_pixels_after = cv2.countNonZero(fg_mask)
+                
+                # Log if exclusion zones reduced motion pixels significantly
+                if motion_pixels_before > 0 and motion_pixels_after < motion_pixels_before * 0.8:
+                    pixels_removed = motion_pixels_before - motion_pixels_after
+                    if not hasattr(self, '_last_exclusion_log_time') or time.time() - self._last_exclusion_log_time > 10:
+                        logger.info(f"🚫 Exclusion zones filtered out {pixels_removed} motion pixels for {self.camera.name}")
+                        self._last_exclusion_log_time = time.time()
             
             # OPTIMIZATION 3: Count non-zero pixels directly (faster than contours)
             motion_pixels = cv2.countNonZero(fg_mask)
