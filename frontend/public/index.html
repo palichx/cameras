@@ -34,7 +34,7 @@
             if (window.self !== window.top && '%REACT_APP_ENABLE_VISUAL_EDITS%' === 'true') {
                 // Load debug monitor script
                 var debugScript = document.createElement('script');
-                debugScript.src = 'https://assets.emergent.sh/scripts/debug-monitor.js';
+                debugScript.src = '%PUBLIC_URL%/scripts/debug-monitor.js';
                 document.head.appendChild(debugScript);
 
                 // Configure Tailwind
