@@ -247,6 +247,7 @@ class CameraRecorder:
         self.motion_state = "idle"  # idle, recording, cooldown
         self.last_motion_time = None
         self.motion_start_time = None
+        self.motion_start_time_dt = None  # For Telegram notification
         self.motion_end_time = None
         
         # Error handling and reconnection
