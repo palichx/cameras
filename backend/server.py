@@ -1383,6 +1383,38 @@ class CameraRecorder:
             # OPTIMIZATION 2: Simple threshold instead of morphological operations for speed
             _, fg_mask = cv2.threshold(fg_mask, 200, 255, cv2.THRESH_BINARY)
             
+            # Apply exclusion zones mask if specified
+            if self.camera.excluded_zones:
+                exclusion_mask = np.ones(fg_mask.shape, dtype=np.uint8) * 255
+                height, width = fg_mask.shape
+                
+                for zone in self.camera.excluded_zones:
+                    zone_type = zone.get('type', 'rect')
+                    
+                    if zone_type == 'rect':
+                        # Rectangle exclusion zone
+                        coords = zone.get('coordinates', {})
+                        # Coordinates are in original frame size, need to scale down by 0.5
+                        x = int(coords.get('x', 0) * 0.5)
+                        y = int(coords.get('y', 0) * 0.5)
+                        w = int(coords.get('width', 0) * 0.5)
+                        h = int(coords.get('height', 0) * 0.5)
+                        
+                        # Make zone black in the exclusion mask
+                        cv2.rectangle(exclusion_mask, (x, y), (x + w, y + h), 0, -1)
+                    
+                    elif zone_type == 'polygon':
+                        # Polygon exclusion zone
+                        coords = zone.get('coordinates', {})
+                        points = coords.get('points', [])
+                        if points:
+                            # Scale points to match resized frame
+                            scaled_points = np.array([[int(p[0] * 0.5), int(p[1] * 0.5)] for p in points], dtype=np.int32)
+                            cv2.fillPoly(exclusion_mask, [scaled_points], 0)
+                
+                # Apply exclusion mask to foreground mask
+                fg_mask = cv2.bitwise_and(fg_mask, exclusion_mask)
+            
             # OPTIMIZATION 3: Count non-zero pixels directly (faster than contours)
             motion_pixels = cv2.countNonZero(fg_mask)
             
