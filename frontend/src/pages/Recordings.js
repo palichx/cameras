@@ -29,6 +29,14 @@ const Recordings = () => {
   const [loading, setLoading] = useState(true);
   const [playingRecording, setPlayingRecording] = useState(null);
   const [showPlayer, setShowPlayer] = useState(false);
+  
+  // Mass management states
+  const [selectedRecordings, setSelectedRecordings] = useState([]);
+  const [showDateRangeDialog, setShowDateRangeDialog] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteAction, setDeleteAction] = useState(null);
 
   useEffect(() => {
     fetchCameras();
