@@ -207,12 +207,15 @@ const Settings = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="0">Оригинальный FPS (рекомендуется)</SelectItem>
                       <SelectItem value="10">10 fps (экономия CPU)</SelectItem>
-                      <SelectItem value="15">15 fps (рекомендуется)</SelectItem>
-                      <SelectItem value="20">20 fps (плавное видео)</SelectItem>
+                      <SelectItem value="15">15 fps (низкая плавность)</SelectItem>
+                      <SelectItem value="20">20 fps (средняя плавность)</SelectItem>
+                      <SelectItem value="24">24 fps (кинематограф)</SelectItem>
                       <SelectItem value="30">30 fps (высокая плавность)</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-slate-500 mt-1">0 = сохранить FPS камеры</p>
                 </div>
               </div>
 
