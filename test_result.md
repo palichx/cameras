@@ -155,7 +155,7 @@ backend:
 
 frontend:
   - task: "Add exclusion zones button in CameraManagement"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/frontend/src/pages/CameraManagement.js"
     stuck_count: 0
@@ -164,10 +164,10 @@ frontend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Add button 'Настроить зоны исключения' in camera settings to open zone editor modal"
+          comment: "Added button with MapPin icon to open zone editor modal. Button positioned between toggle and settings buttons."
 
   - task: "Create ExclusionZoneEditor component"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/frontend/src/components/ExclusionZoneEditor.js"
     stuck_count: 0
@@ -176,7 +176,7 @@ frontend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Create modal component with canvas for drawing zones. Tools: draw rectangle, draw polygon. Display all zones with semi-transparent red fill. Buttons: delete zone, clear all, save, cancel."
+          comment: "Created modal component with canvas for drawing zones. Features: loads camera snapshot, draw rectangles (drag), draw polygons (click points, double-click finish), display zones with semi-transparent red fill, delete zone, clear all, save/cancel buttons. Uses HTML5 Canvas API for drawing."
 
 metadata:
   created_by: "main_agent"
