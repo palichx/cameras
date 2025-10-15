@@ -52,7 +52,7 @@ const Layout = ({ children }) => {
 
               <div className="hidden md:flex space-x-1">
                 <NavLink to="/" icon={<BarChart3 className="w-4 h-4" />} label="Панель" />
-                <NavLink to="/cameras" icon={<Settings className="w-4 h-4" />} label="Камеры" />
+                <NavLink to="/cameras" icon={<Camera className="w-4 h-4" />} label="Камеры" />
                 <NavLink to="/recordings" icon={<FileVideo className="w-4 h-4" />} label="Записи" />
                 <NavLink to="/motion-events" icon={<Activity className="w-4 h-4" />} label="Движение" />
                 <NavLink to="/settings" icon={<SettingsIcon className="w-4 h-4" />} label="Настройки" />
