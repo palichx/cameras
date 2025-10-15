@@ -801,6 +801,7 @@ class CameraRecorder:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.motion_writer = cv2.VideoWriter(self.motion_file_path, fourcc, fps, (width, height))
         self.motion_start_time = time.time()
+        self.motion_start_time_dt = datetime.now(timezone.utc)  # Save datetime for Telegram
         logger.info(f"Started motion recording: {self.motion_file_path}")
     
     def _stop_motion_recording(self):
