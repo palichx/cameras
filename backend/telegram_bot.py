@@ -404,17 +404,39 @@ class VideoSurveillanceBot:
             self.application.add_handler(CallbackQueryHandler(self.button_callback))
             self.application.add_error_handler(self.error_handler)
             
-            # Run bot
+            # Initialize and start
             logger.info("Starting Telegram bot...")
-            self.application.run_polling(allowed_updates=Update.ALL_TYPES)
+            loop.run_until_complete(self.application.initialize())
+            loop.run_until_complete(self.application.start())
+            loop.run_until_complete(self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES))
+            
+            # Keep the bot running
+            loop.run_forever()
+        except Exception as e:
+            logger.error(f"Error running bot: {e}")
         finally:
-            loop.close()
+            try:
+                # Cleanup
+                if self.application:
+                    loop.run_until_complete(self.application.updater.stop())
+                    loop.run_until_complete(self.application.stop())
+                    loop.run_until_complete(self.application.shutdown())
+            except Exception as e:
+                logger.error(f"Error during cleanup: {e}")
+            finally:
+                loop.close()
     
     def stop(self):
         """Stop the bot"""
         if self.application:
             logger.info("Stopping Telegram bot...")
-            self.application.stop()
+            try:
+                # Stop the event loop
+                loop = asyncio.get_event_loop()
+                if loop and loop.is_running():
+                    loop.call_soon_threadsafe(loop.stop)
+            except Exception as e:
+                logger.error(f"Error stopping bot: {e}")
         
         if self.mongo_client:
             self.mongo_client.close()
