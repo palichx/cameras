@@ -218,6 +218,7 @@ class CameraUpdate(BaseModel):
     storage_path: Optional[str] = None
     motion_algorithm: Optional[str] = None
     min_object_area: Optional[int] = None
+    min_motion_duration: Optional[float] = None
     blur_size: Optional[int] = None
     motion_threshold: Optional[int] = None
     mog2_history: Optional[int] = None
