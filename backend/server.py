@@ -70,6 +70,10 @@ api_router = APIRouter(prefix="/api")
 # Global camera recorders dictionary
 active_recorders = {}
 
+# Global Telegram bot instance
+telegram_bot_instance = None
+telegram_bot_thread = None
+
 # Define Models
 class Camera(BaseModel):
     model_config = ConfigDict(extra="ignore")
