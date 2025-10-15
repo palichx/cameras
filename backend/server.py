@@ -1038,16 +1038,32 @@ class CameraRecorder:
             snapshot_dir = STORAGE_PATH / self.camera.id / "snapshots"
             snapshot_dir.mkdir(exist_ok=True, parents=True)
             
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            timestamp_dt = datetime.now(timezone.utc)
+            timestamp = timestamp_dt.strftime("%Y%m%d_%H%M%S")
             snapshot_path = str(snapshot_dir / f"motion_{timestamp}.jpg")
             cv2.imwrite(snapshot_path, frame)
             
-            # We'll save to database in the main async context instead
-            # Just save the snapshot for now
-            logger.info(f"Motion snapshot saved: {snapshot_path}")
+            # Save to MongoDB using sync client
+            from pymongo import MongoClient
+            mongo_url = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
+            sync_client = MongoClient(mongo_url)
+            sync_db = sync_client['video_surveillance']
+            
+            event_doc = {
+                "id": str(uuid.uuid4()),
+                "camera_id": self.camera.id,
+                "camera_name": self.camera.name,
+                "timestamp": timestamp_dt.isoformat(),
+                "snapshot_path": snapshot_path
+            }
+            
+            sync_db.motion_events.insert_one(event_doc)
+            sync_client.close()
+            
+            logger.info(f"Motion event saved: {snapshot_path}")
             
         except Exception as e:
-            logger.error(f"Error saving motion snapshot: {str(e)}")
+            logger.error(f"Error saving motion event: {str(e)}")
     
     def _save_recording_metadata_sync(self, file_path: str, recording_type: str):
         """Save recording metadata (sync version for thread) - stores data for later DB save"""
