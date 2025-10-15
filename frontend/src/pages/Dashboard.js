@@ -127,7 +127,11 @@ const Dashboard = () => {
         ) : (
           <div className="camera-grid">
             {cameras.map((camera) => (
-              <CameraCard key={camera.id} camera={camera} />
+              <CameraCard 
+                key={camera.id} 
+                camera={camera} 
+                status={camerasStatus[camera.id]}
+              />
             ))}
           </div>
         )}
