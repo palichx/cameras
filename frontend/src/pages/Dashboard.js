@@ -349,60 +349,6 @@ const CameraCard = ({ camera, status }) => {
       newWindow.document.close();
     }
   };
-              </div>
-              <div id="controls">
-                <button onclick="zoom(1)">100%</button>
-                <button onclick="zoom(1.5)">150%</button>
-                <button onclick="zoom(2)">200%</button>
-                <button onclick="zoom(3)">300%</button>
-                <button onclick="resetZoom()">Сбросить</button>
-              </div>
-            </div>
-            <script>
-              const video = document.getElementById('video');
-              let currentZoom = 1;
-              
-              function zoom(scale) {
-                currentZoom = scale;
-                video.style.transform = 'scale(' + scale + ')';
-                updateActiveButton(scale);
-              }
-              
-              function resetZoom() {
-                zoom(1);
-              }
-              
-              function updateActiveButton(scale) {
-                const buttons = document.querySelectorAll('#controls button');
-                buttons.forEach(btn => btn.classList.remove('active'));
-                const activeBtn = Array.from(buttons).find(btn => btn.textContent.includes(Math.round(scale * 100) + '%'));
-                if (activeBtn) activeBtn.classList.add('active');
-              }
-              
-              // Keyboard shortcuts
-              document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') window.close();
-                if (e.key === '1') zoom(1);
-                if (e.key === '2') zoom(1.5);
-                if (e.key === '3') zoom(2);
-                if (e.key === '4') zoom(3);
-                if (e.key === '0') resetZoom();
-              });
-              
-              // Error handling
-              video.onerror = () => {
-                video.style.display = 'none';
-                document.getElementById('video-container').innerHTML = '<p style="color: white;">Ошибка загрузки видео</p>';
-              };
-              
-              updateActiveButton(1);
-            </script>
-          </body>
-        </html>
-      `);
-      newWindow.document.close();
-    }
-  };
 
   return (
     <Card className="overflow-hidden hover:shadow-xl transition-shadow" data-testid={`camera-card-${camera.id}`}>
