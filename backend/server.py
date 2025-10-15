@@ -68,6 +68,9 @@ class Camera(BaseModel):
     pre_recording_seconds: float = 5.0  # Buffer before motion
     post_recording_seconds: float = 5.0  # Continue recording after motion
     motion_cooldown_seconds: float = 2.0  # Gap between motion events
+    # Telegram notifications
+    telegram_send_notification: bool = False  # Send text notification
+    telegram_send_video: bool = False  # Send video file
     status: str = "inactive"  # active, inactive, error
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
