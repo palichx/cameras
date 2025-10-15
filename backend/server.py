@@ -833,6 +833,32 @@ class CameraRecorder:
         try:
             logger.info(f"Starting H.264 conversion in background: {file_path}")
             self._convert_to_h264(file_path)
+            
+            # Create Telegram video and send if enabled
+            if self.camera.telegram_send_video or self.camera.telegram_send_notification:
+                telegram_video_path = self._create_telegram_video(file_path)
+                
+                # Send to Telegram
+                if self.camera.telegram_send_video and telegram_video_path:
+                    asyncio.run(send_telegram_notification(
+                        self.camera.name,
+                        self.motion_start_time_dt,
+                        telegram_video_path
+                    ))
+                    # Clean up telegram video after sending
+                    try:
+                        if os.path.exists(telegram_video_path):
+                            os.remove(telegram_video_path)
+                    except:
+                        pass
+                elif self.camera.telegram_send_notification:
+                    # Send notification only
+                    asyncio.run(send_telegram_notification(
+                        self.camera.name,
+                        self.motion_start_time_dt,
+                        None
+                    ))
+                    
         except Exception as e:
             logger.error(f"Error in async H.264 conversion: {e}")
     
