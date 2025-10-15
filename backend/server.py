@@ -1046,8 +1046,9 @@ class CameraRecorder:
             # Save to MongoDB using sync client
             from pymongo import MongoClient
             mongo_url = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
+            db_name = os.getenv('DB_NAME', 'video_surveillance')
             sync_client = MongoClient(mongo_url)
-            sync_db = sync_client['video_surveillance']
+            sync_db = sync_client[db_name]
             
             event_doc = {
                 "id": str(uuid.uuid4()),
@@ -1083,8 +1084,9 @@ class CameraRecorder:
             # Save to MongoDB using sync client
             from pymongo import MongoClient
             mongo_url = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
+            db_name = os.getenv('DB_NAME', 'video_surveillance')
             sync_client = MongoClient(mongo_url)
-            sync_db = sync_client['video_surveillance']
+            sync_db = sync_client[db_name]
             
             recording_doc = {
                 "id": str(uuid.uuid4()),
