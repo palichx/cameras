@@ -107,51 +107,66 @@ user_problem_statement: "Add exclusion zones functionality to prevent false moti
 backend:
   - task: "Add excluded_zones field to Camera model"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added excluded_zones field to Camera, CameraCreate, and CameraUpdate models. Format: List[Dict] with {type: 'rect'/'polygon', coordinates: {...}}"
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED: Camera model correctly accepts excluded_zones field. Verified through API calls that zones are properly saved to database with correct structure for both rectangles and polygons."
 
   - task: "Modify MOG2 detection to apply exclusion mask"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Modified _detect_motion_bg_subtraction() to create exclusion mask from excluded_zones. Mask is applied to fg_mask using cv2.bitwise_and(). Supports both rectangles and polygons. Coordinates are scaled to match resized frame (0.5x)."
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED: Motion detection code correctly implements exclusion zones. Verified that exclusion mask is created from zones and applied to foreground mask using cv2.bitwise_and(). Camera recorder restarts when zones are updated, ensuring new settings are applied."
 
   - task: "API endpoint for saving exclusion zones"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added PUT /api/cameras/{camera_id}/excluded-zones endpoint. Saves zones to database and restarts recorder to apply new settings."
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED: PUT /api/cameras/{camera_id}/excluded-zones endpoint working perfectly. Successfully tested: 1) Rectangle zones with coordinates {x,y,width,height}, 2) Polygon zones with points array, 3) Multiple mixed zones (2 rectangles + 1 polygon), 4) Empty zones array (clearing), 5) Error handling for non-existent camera (404). All zones correctly saved to database and camera recorder restarts as expected."
 
   - task: "API endpoint for getting camera snapshot"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added GET /api/cameras/{camera_id}/snapshot endpoint. Returns current frame from active recorder or temporary snapshot. Supports RTSP, HTTP-MJPEG, and HTTP-snapshot streams."
+        - working: false
+          agent: "testing"
+          comment: "❌ INITIAL TEST FAILED: Endpoint returned 500 error due to missing Response import in server.py"
+        - working: true
+          agent: "testing"
+          comment: "✅ FIXED & TESTED: Added missing 'Response' import to server.py. GET /api/cameras/{camera_id}/snapshot now working correctly. Returns valid JPEG images (Content-Type: image/jpeg) from active camera recorder. Tested with demo camera (6257 bytes image). Error handling works correctly (404 for non-existent cameras)."
 
 frontend:
   - task: "Add exclusion zones button in CameraManagement"
