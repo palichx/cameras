@@ -604,12 +604,14 @@ class CameraRecorder:
                 time.sleep(5)
     
     def _record_rtsp(self):
-        """Record from RTSP stream"""
+        """Record from RTSP stream with resilient reconnection"""
         stream_url = self.build_stream_url()
-        cap = cv2.VideoCapture(stream_url)
         
-        if not cap.isOpened():
-            logger.error(f"Failed to open RTSP stream for camera {self.camera.name}")
+        # Use new connection method with retry
+        cap, first_frame = self._create_video_capture_with_retry(stream_url, max_retries=self.max_retry_attempts)
+        
+        if cap is None:
+            logger.error(f"Failed to connect to RTSP stream for camera {self.camera.name}")
             return False
         
         try:
@@ -619,7 +621,8 @@ class CameraRecorder:
             logger.error(f"Error in RTSP recording: {str(e)}")
             return False
         finally:
-            cap.release()
+            if cap:
+                cap.release()
     
     def _record_http_mjpeg(self):
         """Record from HTTP MJPEG stream with pre/post recording"""
