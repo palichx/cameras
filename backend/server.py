@@ -158,6 +158,10 @@ class CameraRecorder:
         self.reconnect_delay = 5  # Start with 5 seconds
         self.max_reconnect_delay = 300  # Max 5 minutes
         
+        # Performance optimization
+        self.frame_skip = 2  # Process every Nth frame for motion detection
+        self.frame_counter = 0
+        
     def build_stream_url(self):
         """Build stream URL with authentication"""
         stream_url = self.camera.stream_url
