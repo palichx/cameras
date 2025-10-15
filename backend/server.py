@@ -107,6 +107,8 @@ class CameraUpdate(BaseModel):
     pre_recording_seconds: Optional[float] = None
     post_recording_seconds: Optional[float] = None
     motion_cooldown_seconds: Optional[float] = None
+    telegram_send_notification: Optional[bool] = None
+    telegram_send_video: Optional[bool] = None
 
 class Recording(BaseModel):
     model_config = ConfigDict(extra="ignore")
