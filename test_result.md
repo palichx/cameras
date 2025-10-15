@@ -107,27 +107,33 @@ user_problem_statement: "Add minimum motion duration parameter to ignore brief m
 backend:
   - task: "Add min_motion_duration field to Camera model"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added min_motion_duration: float = 1.0 field to Camera, CameraCreate, CameraUpdate models. Default is 1 second."
+        - working: true
+          agent: "testing"
+          comment: "✅ PASSED - Camera model includes min_motion_duration field. API tests confirm: 1) Field exists in GET /api/cameras/{id} response, 2) Can create cameras with custom min_motion_duration values, 3) Can update min_motion_duration via PUT API, 4) Values persist correctly in database, 5) Edge cases (0.1-10.0 range) work properly. No validation constraints found but field functions as expected."
 
   - task: "Implement motion duration tracking in detection logic"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added motion_first_detected_time tracking variable. Modified _record_rtsp, _record_http_mjpeg, _record_http_snapshot to track motion duration. Recording only starts if motion_duration >= min_motion_duration. Logs show motion duration when triggering recording. Short motions are filtered out with debug log."
+        - working: true
+          agent: "testing"
+          comment: "✅ PASSED - Motion duration tracking is working correctly. Backend logs show 'Motion detected (duration: 1.0s)' messages confirming duration calculation. Camera recorders restart properly when min_motion_duration is updated. Code analysis shows motion_first_detected_time tracking in all 3 recording functions (_record_rtsp, _record_http_mjpeg, _record_http_snapshot) with proper filtering logic."
 
 frontend:
   - task: "Add min_motion_duration slider in CameraManagement"
