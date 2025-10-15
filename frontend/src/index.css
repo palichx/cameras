@@ -113,3 +113,16 @@ code {
         border-bottom-color: inherit;
     }
 }
+
+/* Fix for floating settings overlay issue */
+@media screen {
+    /* Hide elements that appear as floating overlays outside normal layout */
+    body > div > div[data-testid="settings-page"] {
+        display: none !important;
+    }
+    
+    /* Ensure settings page only shows on /settings route */
+    body:has(#root) [data-testid="settings-page"]:not(:only-child) {
+        display: none !important;
+    }
+}
