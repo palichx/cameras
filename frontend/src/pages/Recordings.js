@@ -29,6 +29,7 @@ const Recordings = () => {
   const [loading, setLoading] = useState(true);
   const [playingRecording, setPlayingRecording] = useState(null);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   
   // Mass management states
   const [selectedRecordings, setSelectedRecordings] = useState([]);
