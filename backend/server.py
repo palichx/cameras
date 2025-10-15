@@ -372,6 +372,15 @@ class CameraRecorder:
         self.max_errors = 10  # Stop after 10 consecutive errors
         self.reconnect_delay = 5  # Start with 5 seconds
         self.max_reconnect_delay = 300  # Max 5 minutes
+        self.consecutive_failures = 0
+        self.last_successful_frame = time.time()
+        
+        # Connection resilience
+        self.connection_timeout = 10  # Seconds to wait for connection
+        self.frame_timeout = 5  # Seconds to wait for frame
+        self.max_retry_attempts = 3  # Retry attempts before giving up
+        self.adaptive_quality = True  # Enable adaptive quality
+        self.current_quality = "high"  # high, medium, low
         
         # Performance optimization
         self.frame_skip = 2  # Process every Nth frame for motion detection
