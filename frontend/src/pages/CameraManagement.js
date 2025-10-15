@@ -536,6 +536,24 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                 />
               </div>
 
+              <div>
+                <Label htmlFor="min_motion_duration">
+                  Игнорировать движения короче: {formData.min_motion_duration.toFixed(1)} сек
+                </Label>
+                <Slider
+                  id="min_motion_duration"
+                  value={[formData.min_motion_duration]}
+                  onValueChange={([value]) => setFormData({ ...formData, min_motion_duration: value })}
+                  min={0.1}
+                  max={10}
+                  step={0.1}
+                  className="mt-2"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Фильтрует кратковременные ложные срабатывания (птицы, тени)
+                </p>
+              </div>
+
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="pre_recording_seconds">Предзапись (сек)</Label>
