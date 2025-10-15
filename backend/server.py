@@ -190,6 +190,7 @@ class CameraCreate(BaseModel):
     storage_path: Optional[str] = None
     motion_algorithm: str = "mog2"
     min_object_area: int = 500
+    min_motion_duration: float = 1.0
     blur_size: int = 21
     motion_threshold: int = 25
     mog2_history: int = 500
