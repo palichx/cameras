@@ -247,6 +247,20 @@ const CameraManagement = () => {
           camera={selectedCamera}
         />
       )}
+
+      {showZoneEditor && zoneEditorCamera && (
+        <ExclusionZoneEditor
+          cameraId={zoneEditorCamera.id}
+          cameraName={zoneEditorCamera.name}
+          isOpen={showZoneEditor}
+          onClose={() => {
+            setShowZoneEditor(false);
+            setZoneEditorCamera(null);
+          }}
+          onSave={handleSaveZones}
+          initialZones={zoneEditorCamera.excluded_zones || []}
+        />
+      )}
     </div>
   );
 };
