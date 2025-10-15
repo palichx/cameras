@@ -871,7 +871,7 @@ class CameraRecorder:
                 
                 # Send to Telegram
                 if self.camera.telegram_send_video and telegram_video_path:
-                    run_async_in_executor(send_telegram_notification(
+                    send_telegram_notification_sync(
                         self.camera.name,
                         self.motion_start_time_dt,
                         telegram_video_path
@@ -884,7 +884,7 @@ class CameraRecorder:
                         pass
                 elif self.camera.telegram_send_notification:
                     # Send notification only
-                    run_async_in_executor(send_telegram_notification(
+                    send_telegram_notification_sync(
                         self.camera.name,
                         self.motion_start_time_dt,
                         None
