@@ -74,6 +74,60 @@ active_recorders = {}
 telegram_bot_instance = None
 telegram_bot_thread = None
 
+def start_telegram_bot_if_configured():
+    """Start or restart Telegram bot based on current settings"""
+    global telegram_bot_instance, telegram_bot_thread
+    
+    try:
+        # Stop existing bot if running
+        if telegram_bot_instance:
+            try:
+                telegram_bot_instance.stop()
+                logger.info("Stopped existing Telegram bot")
+            except Exception as e:
+                logger.error(f"Error stopping bot: {e}")
+            telegram_bot_instance = None
+            telegram_bot_thread = None
+        
+        # Get settings from database
+        from pymongo import MongoClient
+        sync_client = MongoClient(mongo_url)
+        sync_db = sync_client[os.environ['DB_NAME']]
+        settings_doc = sync_db.settings.find_one({"id": "system_settings"}, {"_id": 0})
+        sync_client.close()
+        
+        if settings_doc:
+            telegram = settings_doc.get('telegram', {})
+            if telegram.get('enabled') and telegram.get('bot_token') and telegram.get('chat_id'):
+                from telegram_bot import VideoSurveillanceBot
+                from threading import Thread
+                
+                bot_token = telegram['bot_token']
+                chat_id = telegram['chat_id']
+                
+                telegram_bot_instance = VideoSurveillanceBot(
+                    bot_token=bot_token,
+                    allowed_chat_id=chat_id,
+                    mongo_url=mongo_url,
+                    db_name=os.environ['DB_NAME']
+                )
+                
+                # Start bot in separate thread
+                telegram_bot_thread = Thread(target=telegram_bot_instance.start, daemon=True)
+                telegram_bot_thread.start()
+                
+                logger.info(f"✅ Telegram bot started successfully for chat_id: {chat_id}")
+                return True
+            else:
+                logger.info("Telegram bot not enabled or not configured")
+                return False
+        else:
+            logger.info("Settings not found, Telegram bot not started")
+            return False
+    except Exception as e:
+        logger.error(f"Failed to start Telegram bot: {e}")
+        return False
+
 # Define Models
 class Camera(BaseModel):
     model_config = ConfigDict(extra="ignore")
