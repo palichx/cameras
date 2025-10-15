@@ -28,6 +28,14 @@ const MotionEvents = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Mass management states
+  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [showDateRangeDialog, setShowDateRangeDialog] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteAction, setDeleteAction] = useState(null);
+
   useEffect(() => {
     fetchCameras();
     fetchEvents();
