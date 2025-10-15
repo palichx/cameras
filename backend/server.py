@@ -1948,6 +1948,10 @@ async def update_settings(settings: SystemSettings):
         upsert=True
     )
     
+    # Restart Telegram bot if settings changed
+    logger.info("Settings updated, restarting Telegram bot if configured...")
+    start_telegram_bot_if_configured()
+    
     return {"message": "Settings updated successfully", "settings": settings}
 
 @api_router.post("/settings/test-telegram")
