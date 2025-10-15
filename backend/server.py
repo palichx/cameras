@@ -662,8 +662,16 @@ class CameraRecorder:
         
         # Save recording metadata and convert to H.264
         if self.motion_file_path and os.path.exists(self.motion_file_path):
-            # Convert to H.264 for browser compatibility
-            self._convert_to_h264(self.motion_file_path)
+            if self.enable_h264_conversion:
+                # Convert to H.264 in background (non-blocking)
+                import threading
+                conversion_thread = threading.Thread(
+                    target=self._convert_to_h264_async,
+                    args=(self.motion_file_path,),
+                    daemon=True
+                )
+                conversion_thread.start()
+            
             asyncio.run(self._save_recording_metadata(self.motion_file_path, "motion"))
             logger.info(f"Stopped motion recording: {self.motion_file_path}")
         
