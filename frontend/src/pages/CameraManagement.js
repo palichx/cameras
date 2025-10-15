@@ -520,6 +520,36 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                   </p>
                 </div>
               </div>
+
+              {/* Telegram Settings */}
+              <div className="pt-4 border-t">
+                <h4 className="text-sm font-semibold text-slate-700 mb-3">📱 Уведомления Telegram</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="telegram_send_notification">Отправлять уведомления</Label>
+                      <p className="text-xs text-slate-500">Текстовое сообщение при движении</p>
+                    </div>
+                    <Switch
+                      id="telegram_send_notification"
+                      checked={formData.telegram_send_notification}
+                      onCheckedChange={(checked) => setFormData({ ...formData, telegram_send_notification: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="telegram_send_video">Отправлять видео</Label>
+                      <p className="text-xs text-slate-500">Видео файл 640x480, 1 fps</p>
+                    </div>
+                    <Switch
+                      id="telegram_send_video"
+                      checked={formData.telegram_send_video}
+                      onCheckedChange={(checked) => setFormData({ ...formData, telegram_send_video: checked })}
+                    />
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
