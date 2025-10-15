@@ -199,6 +199,15 @@ const CameraManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => handleOpenZoneEditor(camera)}
+                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                  title="Настроить зоны исключения"
+                >
+                  <MapPin className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleEditCamera(camera)}
                   data-testid={`edit-camera-${camera.id}`}
                 >
