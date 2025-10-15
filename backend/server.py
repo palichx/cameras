@@ -156,6 +156,7 @@ class Camera(BaseModel):
     # Advanced motion detection settings
     motion_algorithm: str = "mog2"  # "basic", "mog2", "knn"
     min_object_area: int = 500  # Minimum area in pixels to consider as motion
+    min_motion_duration: float = 1.0  # Minimum motion duration in seconds to trigger recording
     blur_size: int = 21  # GaussianBlur kernel size (must be odd)
     motion_threshold: int = 25  # Threshold for frame differencing (basic mode)
     mog2_history: int = 500  # Number of frames for MOG2 learning
