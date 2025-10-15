@@ -104,9 +104,9 @@ curl http://localhost:8001/api/settings
 
 ### ✅ Внешний доступ
 ```bash
-curl https://videosentry-2.preview.emergentagent.com
-curl https://videosentry-2.preview.emergentagent.com/api/cameras
-curl https://videosentry-2.preview.emergentagent.com/api/settings
+curl https://videosecureai.preview.emergentagent.com
+curl https://videosecureai.preview.emergentagent.com/api/cameras
+curl https://videosecureai.preview.emergentagent.com/api/settings
 ```
 
 ### ✅ Проверка UI

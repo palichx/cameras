@@ -29,7 +29,7 @@ def create_test_recording(camera_id, camera_name, start_time, recording_type="co
 
 def main():
     # Get existing camera
-    response = requests.get("https://videosentry-2.preview.emergentagent.com/api/cameras")
+    response = requests.get("https://videosecureai.preview.emergentagent.com/api/cameras")
     cameras = response.json()
     
     if not cameras:

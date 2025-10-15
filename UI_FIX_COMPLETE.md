@@ -50,7 +50,7 @@ StrictMode был отключён в `/app/frontend/src/index.js` во врем
 ✅ **Recordings** - чистый интерфейс
 ✅ **Motion Events** - чистый интерфейс
 ✅ **Локальный доступ** (http://localhost:3000) - работает идеально
-✅ **Внешний доступ** (https://videosentry-2.preview.emergentagent.com) - работает идеально
+✅ **Внешний доступ** (https://videosecureai.preview.emergentagent.com) - работает идеально
 
 ## Техническое объяснение
 
