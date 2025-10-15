@@ -152,6 +152,7 @@ class CameraUpdate(BaseModel):
     motion_cooldown_seconds: Optional[float] = None
     telegram_send_notification: Optional[bool] = None
     telegram_send_video: Optional[bool] = None
+    storage_path: Optional[str] = None
     motion_algorithm: Optional[str] = None
     min_object_area: Optional[int] = None
     blur_size: Optional[int] = None
