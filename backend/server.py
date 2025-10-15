@@ -478,7 +478,7 @@ class CameraRecorder:
                             for buffered_frame in self.pre_record_buffer:
                                 if self.motion_writer:
                                     self.motion_writer.write(buffered_frame)
-                            run_async_in_executor(self._save_motion_event(frame))
+                            self._save_motion_event_sync(frame)
                             self.motion_state = "recording"
                         
                         elif self.motion_state == "cooldown":
@@ -602,7 +602,7 @@ class CameraRecorder:
                         for buffered_frame in self.pre_record_buffer:
                             if self.motion_writer:
                                 self.motion_writer.write(buffered_frame)
-                        run_async_in_executor(self._save_motion_event(frame))
+                        self._save_motion_event_sync(frame)
                         self.motion_state = "recording"
                     
                     elif self.motion_state == "cooldown":
@@ -729,7 +729,7 @@ class CameraRecorder:
                         logger.info(f"Motion detected - wrote {len(self.pre_record_buffer)} pre-recorded frames")
                         
                         # Save motion event
-                        run_async_in_executor(self._save_motion_event(frame))
+                        self._save_motion_event_sync(frame)
                         self.motion_state = "recording"
                     
                     elif self.motion_state == "cooldown":
