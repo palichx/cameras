@@ -378,24 +378,40 @@ const Recordings = () => {
       ) : (
         <div className="space-y-4">
           {recordings.map((recording) => (
-            <Card key={recording.id} className="p-4 hover:shadow-lg transition-shadow" data-testid={`recording-item-${recording.id}`}>
+            <Card 
+              key={recording.id} 
+              className={`p-4 transition-all ${
+                selectedRecordings.includes(recording.id) 
+                  ? 'ring-2 ring-blue-500 bg-blue-50' 
+                  : 'hover:shadow-lg'
+              }`}
+              data-testid={`recording-item-${recording.id}`}
+            >
               <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="font-semibold text-slate-800">{recording.camera_name}</h3>
-                    <Badge
-                      variant="outline"
-                      className={recording.recording_type === 'motion' ? 'border-orange-500 text-orange-700' : ''}
-                      data-testid={`recording-type-${recording.id}`}
-                    >
-                      {recording.recording_type === 'continuous' ? 'Непрерывная' : 'Движение'}
-                    </Badge>
-                  </div>
+                <div className="flex items-center space-x-3 flex-1">
+                  <Checkbox
+                    checked={selectedRecordings.includes(recording.id)}
+                    onCheckedChange={() => toggleSelectRecording(recording.id)}
+                    data-testid={`checkbox-recording-${recording.id}`}
+                  />
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="font-semibold text-slate-800">{recording.camera_name}</h3>
+                      <Badge
+                        variant="outline"
+                        className={recording.recording_type === 'motion' ? 'border-orange-500 text-orange-700' : ''}
+                        data-testid={`recording-type-${recording.id}`}
+                      >
+                        {recording.recording_type === 'continuous' ? 'Непрерывная' : 'Движение'}
+                      </Badge>
+                    </div>
 
-                  <div className="flex items-center space-x-6 text-sm text-slate-600">
-                    <div>📅 {formatDate(recording.start_time)}</div>
-                    <div>⏱️ {formatDuration(recording.duration)}</div>
-                    <div>💾 {formatFileSize(recording.file_size)}</div>
+                    <div className="flex items-center space-x-6 text-sm text-slate-600">
+                      <div>📅 {formatDate(recording.start_time)}</div>
+                      <div>⏱️ {formatDuration(recording.duration)}</div>
+                      <div>💾 {formatFileSize(recording.file_size)}</div>
+                    </div>
                   </div>
                 </div>
 
