@@ -118,65 +118,17 @@ backend:
           comment: "Modified get_live_stream endpoint (line 2076-2150) to check if an active recorder exists in active_recorders dict. If recorder exists and is running, use its cached frames (recorder.last_frame) instead of creating new cv2.VideoCapture. Falls back to temporary stream if no active recorder found."
 
 frontend:
-  - task: "Checkbox selection for recordings"
+  - task: "Live stream loading in new windows"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/pages/Recordings.js"
+    file: "/app/frontend/src/pages/Dashboard.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Added checkbox component for each recording, select all functionality, visual feedback for selected items with blue ring"
-  
-  - task: "Bulk action buttons UI"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/pages/Recordings.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Added three bulk action buttons: Delete Selected (red), Delete by Date, Delete all from Camera. Buttons show proper enabled/disabled states"
-  
-  - task: "Date range picker dialog"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/pages/Recordings.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Added dialog with start/end date inputs, shows info about which cameras will be affected"
-  
-  - task: "Confirmation dialogs for bulk operations"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/pages/Recordings.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Added AlertDialog for all bulk delete operations with clear warning messages"
-  
-  - task: "API integration for mass delete operations"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/pages/Recordings.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Integrated all three backend APIs: bulk-delete, delete-by-date, delete-by-camera with proper error handling"
+          comment: "Frontend already opens live streams in new windows. Backend changes will make the stream load faster and reuse existing connection. Need to verify that new windows load quickly and don't create duplicate camera connections."
 
 metadata:
   created_by: "main_agent"
