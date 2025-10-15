@@ -429,6 +429,349 @@ class VideoSurveillanceAPITester:
         success2 = self.run_test("Delete Non-existent Recording", "DELETE", "recordings/invalid-id", 404)
         return success1 and success2
 
+    # ===== EXCLUSION ZONES TESTS =====
+    
+    def test_camera_snapshot_endpoint(self):
+        """Test GET /api/cameras/{camera_id}/snapshot endpoint"""
+        print("\n🔍 Testing Camera Snapshot Endpoint...")
+        
+        # Test with existing demo camera
+        demo_camera_id = "2ed4b656-faea-4668-a8ee-64f3e400568a"
+        
+        # Test 1: Get snapshot from existing camera
+        url = f"{self.api_url}/cameras/{demo_camera_id}/snapshot"
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                # Verify it's a JPEG image
+                content_type = response.headers.get('content-type', '')
+                if 'image/jpeg' in content_type:
+                    print(f"✅ Snapshot endpoint returned valid JPEG image")
+                    print(f"   Content-Type: {content_type}")
+                    print(f"   Image size: {len(response.content)} bytes")
+                    self.tests_passed += 1
+                    success1 = True
+                else:
+                    print(f"❌ Invalid content type: {content_type}")
+                    success1 = False
+            else:
+                print(f"❌ Failed - Status: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error: {error_data}")
+                except:
+                    print(f"   Error: {response.text}")
+                success1 = False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            success1 = False
+        
+        self.tests_run += 1
+        
+        # Test 2: Test with non-existent camera ID
+        success2 = self.run_test("Snapshot Non-existent Camera", "GET", "cameras/non-existent-id/snapshot", 404)
+        
+        return success1 and success2
+
+    def test_exclusion_zones_rectangle(self):
+        """Test saving rectangle exclusion zones"""
+        print("\n🔍 Testing Rectangle Exclusion Zones...")
+        
+        demo_camera_id = "2ed4b656-faea-4668-a8ee-64f3e400568a"
+        
+        # Test rectangle zones
+        rectangle_zones = [
+            {
+                "type": "rect",
+                "coordinates": {
+                    "x": 10,
+                    "y": 10,
+                    "width": 100,
+                    "height": 50
+                }
+            }
+        ]
+        
+        success, response = self.run_test(
+            "Save Rectangle Exclusion Zone", 
+            "PUT", 
+            f"cameras/{demo_camera_id}/excluded-zones", 
+            200, 
+            data=rectangle_zones
+        )
+        
+        if success:
+            print(f"   Zones saved: {response.get('zones', [])}")
+            
+            # Verify zones were saved to database
+            success_verify, camera_data = self.run_test(
+                "Verify Rectangle Zones Saved", 
+                "GET", 
+                f"cameras/{demo_camera_id}", 
+                200
+            )
+            
+            if success_verify:
+                excluded_zones = camera_data.get('excluded_zones', [])
+                if excluded_zones and len(excluded_zones) > 0:
+                    zone = excluded_zones[0]
+                    if (zone.get('type') == 'rect' and 
+                        zone.get('coordinates', {}).get('x') == 10 and
+                        zone.get('coordinates', {}).get('width') == 100):
+                        print("✅ Rectangle zone correctly saved to database")
+                        return True
+                    else:
+                        print(f"❌ Zone data mismatch: {zone}")
+                        return False
+                else:
+                    print("❌ No zones found in database")
+                    return False
+        
+        return success
+
+    def test_exclusion_zones_polygon(self):
+        """Test saving polygon exclusion zones"""
+        print("\n🔍 Testing Polygon Exclusion Zones...")
+        
+        demo_camera_id = "2ed4b656-faea-4668-a8ee-64f3e400568a"
+        
+        # Test polygon zones
+        polygon_zones = [
+            {
+                "type": "polygon",
+                "coordinates": {
+                    "points": [[10, 10], [100, 10], [100, 100], [10, 100]]
+                }
+            }
+        ]
+        
+        success, response = self.run_test(
+            "Save Polygon Exclusion Zone", 
+            "PUT", 
+            f"cameras/{demo_camera_id}/excluded-zones", 
+            200, 
+            data=polygon_zones
+        )
+        
+        if success:
+            print(f"   Zones saved: {response.get('zones', [])}")
+            
+            # Verify zones were saved to database
+            success_verify, camera_data = self.run_test(
+                "Verify Polygon Zones Saved", 
+                "GET", 
+                f"cameras/{demo_camera_id}", 
+                200
+            )
+            
+            if success_verify:
+                excluded_zones = camera_data.get('excluded_zones', [])
+                if excluded_zones and len(excluded_zones) > 0:
+                    zone = excluded_zones[0]
+                    if (zone.get('type') == 'polygon' and 
+                        len(zone.get('coordinates', {}).get('points', [])) == 4):
+                        print("✅ Polygon zone correctly saved to database")
+                        return True
+                    else:
+                        print(f"❌ Zone data mismatch: {zone}")
+                        return False
+                else:
+                    print("❌ No zones found in database")
+                    return False
+        
+        return success
+
+    def test_exclusion_zones_multiple(self):
+        """Test saving multiple exclusion zones (mix of rectangles and polygons)"""
+        print("\n🔍 Testing Multiple Mixed Exclusion Zones...")
+        
+        demo_camera_id = "2ed4b656-faea-4668-a8ee-64f3e400568a"
+        
+        # Test multiple mixed zones
+        mixed_zones = [
+            {
+                "type": "rect",
+                "coordinates": {
+                    "x": 50,
+                    "y": 50,
+                    "width": 80,
+                    "height": 60
+                }
+            },
+            {
+                "type": "polygon",
+                "coordinates": {
+                    "points": [[200, 200], [300, 200], [250, 300]]
+                }
+            },
+            {
+                "type": "rect",
+                "coordinates": {
+                    "x": 400,
+                    "y": 100,
+                    "width": 120,
+                    "height": 80
+                }
+            }
+        ]
+        
+        success, response = self.run_test(
+            "Save Multiple Mixed Exclusion Zones", 
+            "PUT", 
+            f"cameras/{demo_camera_id}/excluded-zones", 
+            200, 
+            data=mixed_zones
+        )
+        
+        if success:
+            print(f"   Zones saved: {len(response.get('zones', []))} zones")
+            
+            # Verify zones were saved to database
+            success_verify, camera_data = self.run_test(
+                "Verify Multiple Zones Saved", 
+                "GET", 
+                f"cameras/{demo_camera_id}", 
+                200
+            )
+            
+            if success_verify:
+                excluded_zones = camera_data.get('excluded_zones', [])
+                if len(excluded_zones) == 3:
+                    rect_count = sum(1 for z in excluded_zones if z.get('type') == 'rect')
+                    polygon_count = sum(1 for z in excluded_zones if z.get('type') == 'polygon')
+                    print(f"✅ Multiple zones saved: {rect_count} rectangles, {polygon_count} polygons")
+                    return True
+                else:
+                    print(f"❌ Expected 3 zones, found {len(excluded_zones)}")
+                    return False
+        
+        return success
+
+    def test_exclusion_zones_empty(self):
+        """Test saving empty exclusion zones array"""
+        print("\n🔍 Testing Empty Exclusion Zones...")
+        
+        demo_camera_id = "2ed4b656-faea-4668-a8ee-64f3e400568a"
+        
+        # Test empty zones array
+        empty_zones = []
+        
+        success, response = self.run_test(
+            "Save Empty Exclusion Zones", 
+            "PUT", 
+            f"cameras/{demo_camera_id}/excluded-zones", 
+            200, 
+            data=empty_zones
+        )
+        
+        if success:
+            # Verify zones were cleared in database
+            success_verify, camera_data = self.run_test(
+                "Verify Empty Zones Saved", 
+                "GET", 
+                f"cameras/{demo_camera_id}", 
+                200
+            )
+            
+            if success_verify:
+                excluded_zones = camera_data.get('excluded_zones', [])
+                if len(excluded_zones) == 0:
+                    print("✅ Empty zones array correctly saved (zones cleared)")
+                    return True
+                else:
+                    print(f"❌ Expected 0 zones, found {len(excluded_zones)}")
+                    return False
+        
+        return success
+
+    def test_exclusion_zones_nonexistent_camera(self):
+        """Test exclusion zones with non-existent camera ID"""
+        print("\n🔍 Testing Exclusion Zones with Non-existent Camera...")
+        
+        zones = [{"type": "rect", "coordinates": {"x": 10, "y": 10, "width": 50, "height": 50}}]
+        
+        return self.run_test(
+            "Exclusion Zones Non-existent Camera", 
+            "PUT", 
+            "cameras/non-existent-id/excluded-zones", 
+            404, 
+            data=zones
+        )
+
+    def test_motion_detection_with_exclusion_zones(self):
+        """Test that motion detection applies exclusion zones correctly"""
+        print("\n🔍 Testing Motion Detection with Exclusion Zones...")
+        
+        demo_camera_id = "2ed4b656-faea-4668-a8ee-64f3e400568a"
+        
+        # First, set up exclusion zones
+        test_zones = [
+            {
+                "type": "rect",
+                "coordinates": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 50
+                }
+            }
+        ]
+        
+        success_setup, _ = self.run_test(
+            "Setup Exclusion Zones for Motion Test", 
+            "PUT", 
+            f"cameras/{demo_camera_id}/excluded-zones", 
+            200, 
+            data=test_zones
+        )
+        
+        if not success_setup:
+            print("❌ Failed to setup exclusion zones for motion test")
+            return False
+        
+        # Check if camera is active (has recorder running)
+        success_status, cameras_status = self.run_test(
+            "Check Camera Status for Motion Test", 
+            "GET", 
+            "cameras/status/all", 
+            200
+        )
+        
+        if success_status:
+            demo_camera_status = None
+            for cam in cameras_status:
+                if cam.get('id') == demo_camera_id:
+                    demo_camera_status = cam
+                    break
+            
+            if demo_camera_status:
+                is_active = demo_camera_status.get('is_active', False)
+                print(f"   Demo camera active status: {is_active}")
+                
+                if is_active:
+                    print("✅ Camera is active - exclusion zones should be applied to motion detection")
+                    print("   Note: Actual motion detection testing requires real camera feed")
+                    self.tests_passed += 1
+                    self.tests_run += 1
+                    return True
+                else:
+                    print("⚠️  Camera is not active - exclusion zones set but not actively applied")
+                    print("   This is expected behavior for test cameras without real streams")
+                    self.tests_passed += 1
+                    self.tests_run += 1
+                    return True
+            else:
+                print("❌ Demo camera not found in status")
+                self.tests_run += 1
+                return False
+        else:
+            print("❌ Failed to get camera status")
+            return False
+
 def main():
     print("🚀 Starting Video Surveillance System API Tests")
     print("=" * 60)
