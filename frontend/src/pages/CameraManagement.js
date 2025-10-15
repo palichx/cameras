@@ -528,6 +528,123 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                 </div>
               </div>
 
+              {/* Advanced Motion Detection Settings */}
+              <div className="pt-4 border-t">
+                <h4 className="text-sm font-semibold text-slate-700 mb-3">🔧 Расширенные настройки детекции</h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="motion_algorithm">Алгоритм детекции</Label>
+                    <select
+                      id="motion_algorithm"
+                      value={formData.motion_algorithm}
+                      onChange={(e) => setFormData({ ...formData, motion_algorithm: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-md"
+                    >
+                      <option value="mog2">MOG2 - Адаптивный (рекомендуется)</option>
+                      <option value="knn">KNN - Альтернативный</option>
+                      <option value="basic">Базовый - Быстрый</option>
+                    </select>
+                    <p className="text-xs text-slate-500 mt-1">
+                      MOG2 лучше справляется с освещением и тенями
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="min_object_area">Мин. размер объекта (px)</Label>
+                      <Input
+                        id="min_object_area"
+                        type="number"
+                        min="100"
+                        max="5000"
+                        step="100"
+                        value={formData.min_object_area}
+                        onChange={(e) => setFormData({ ...formData, min_object_area: parseInt(e.target.value) })}
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Игнорировать мелкие объекты</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="blur_size">Размытие (px)</Label>
+                      <Input
+                        id="blur_size"
+                        type="number"
+                        min="3"
+                        max="51"
+                        step="2"
+                        value={formData.blur_size}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (val % 2 === 0) val++; // Ensure odd number
+                          setFormData({ ...formData, blur_size: val });
+                        }}
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Только нечётные числа</p>
+                    </div>
+                  </div>
+
+                  {formData.motion_algorithm === 'basic' && (
+                    <div>
+                      <Label htmlFor="motion_threshold">Порог детекции</Label>
+                      <Input
+                        id="motion_threshold"
+                        type="number"
+                        min="5"
+                        max="100"
+                        value={formData.motion_threshold}
+                        onChange={(e) => setFormData({ ...formData, motion_threshold: parseInt(e.target.value) })}
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Чем выше, тем меньше чувствительность</p>
+                    </div>
+                  )}
+
+                  {(formData.motion_algorithm === 'mog2' || formData.motion_algorithm === 'knn') && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="mog2_history">История кадров</Label>
+                          <Input
+                            id="mog2_history"
+                            type="number"
+                            min="100"
+                            max="1000"
+                            step="50"
+                            value={formData.mog2_history}
+                            onChange={(e) => setFormData({ ...formData, mog2_history: parseInt(e.target.value) })}
+                          />
+                          <p className="text-xs text-slate-500 mt-1">Для обучения фона</p>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="mog2_var_threshold">Порог переднего плана</Label>
+                          <Input
+                            id="mog2_var_threshold"
+                            type="number"
+                            min="8"
+                            max="50"
+                            value={formData.mog2_var_threshold}
+                            onChange={(e) => setFormData({ ...formData, mog2_var_threshold: parseInt(e.target.value) })}
+                          />
+                          <p className="text-xs text-slate-500 mt-1">Чувствительность MOG2</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="detect_shadows">Детекция теней</Label>
+                          <p className="text-xs text-slate-500">Игнорировать тени объектов</p>
+                        </div>
+                        <Switch
+                          id="detect_shadows"
+                          checked={formData.detect_shadows}
+                          onCheckedChange={(checked) => setFormData({ ...formData, detect_shadows: checked })}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* Telegram Settings */}
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-semibold text-slate-700 mb-3">📱 Уведомления Telegram</h4>
