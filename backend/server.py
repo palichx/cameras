@@ -152,6 +152,12 @@ class CameraRecorder:
         self.motion_start_time = None
         self.motion_end_time = None
         
+        # Error handling and reconnection
+        self.error_count = 0
+        self.max_errors = 10  # Stop after 10 consecutive errors
+        self.reconnect_delay = 5  # Start with 5 seconds
+        self.max_reconnect_delay = 300  # Max 5 minutes
+        
     def build_stream_url(self):
         """Build stream URL with authentication"""
         stream_url = self.camera.stream_url
