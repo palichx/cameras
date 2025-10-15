@@ -95,6 +95,121 @@ const MotionEvents = () => {
     return `${Math.floor(diffMins / 1440)} дн. назад`;
   };
 
+  // Mass management functions
+  const toggleSelectAll = () => {
+    if (selectedEvents.length === events.length) {
+      setSelectedEvents([]);
+    } else {
+      setSelectedEvents(events.map(e => e.id));
+    }
+  };
+
+  const toggleSelectEvent = (eventId) => {
+    if (selectedEvents.includes(eventId)) {
+      setSelectedEvents(selectedEvents.filter(id => id !== eventId));
+    } else {
+      setSelectedEvents([...selectedEvents, eventId]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEvents.length === 0) {
+      toast.error('Выберите события для удаления');
+      return;
+    }
+
+    setDeleteAction({
+      type: 'bulk',
+      count: selectedEvents.length,
+      message: `Вы уверены, что хотите удалить ${selectedEvents.length} событий движения?`
+    });
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteByDateRange = () => {
+    if (!startDate || !endDate) {
+      toast.error('Укажите дату начала и конца периода');
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+      toast.error('Дата начала не может быть позже даты окончания');
+      return;
+    }
+
+    setDeleteAction({
+      type: 'date-range',
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      cameraId: selectedCamera !== 'all' ? selectedCamera : null,
+      message: `Удалить все события движения с ${startDate} по ${endDate}?`
+    });
+    setShowDateRangeDialog(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteByCamera = () => {
+    if (selectedCamera === 'all') {
+      toast.error('Выберите конкретную камеру');
+      return;
+    }
+
+    const cameraName = cameras.find(c => c.id === selectedCamera)?.name || selectedCamera;
+    const count = events.length;
+
+    setDeleteAction({
+      type: 'camera',
+      cameraId: selectedCamera,
+      count: count,
+      message: `Удалить все ${count} событий движения с камеры "${cameraName}"?`
+    });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      let response;
+
+      switch (deleteAction.type) {
+        case 'bulk':
+          response = await axios.post(`${API}/motion-events/bulk-delete`, {
+            ids: selectedEvents
+          });
+          toast.success(`Удалено ${response.data.deleted} событий`);
+          break;
+
+        case 'date-range':
+          response = await axios.post(`${API}/motion-events/delete-by-date`, {
+            start_date: deleteAction.startDate,
+            end_date: deleteAction.endDate,
+            camera_id: deleteAction.cameraId
+          });
+          toast.success(`Удалено ${response.data.deleted} событий`);
+          break;
+
+        case 'camera':
+          response = await axios.post(`${API}/motion-events/delete-by-camera?camera_id=${deleteAction.cameraId}`);
+          toast.success(`Удалено ${response.data.deleted} событий`);
+          break;
+
+        default:
+          break;
+      }
+
+      setSelectedEvents([]);
+      fetchEvents();
+    } catch (error) {
+      console.error('Error during bulk delete:', error);
+      toast.error('Ошибка при удалении событий');
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeleteAction(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
