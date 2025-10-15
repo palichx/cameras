@@ -502,13 +502,13 @@ class CameraRecorder:
     
     def _should_process_frame_for_motion(self):
         """Determine if current frame should be processed for motion detection"""
-        # Adaptive frame skipping based on quality
+        # More aggressive frame skipping based on quality
         if self.current_quality == "low":
-            return self.frame_counter % 4 == 0  # Process every 4th frame
+            return self.frame_counter % 6 == 0  # Process every 6th frame (was 4)
         elif self.current_quality == "medium":
-            return self.frame_counter % 2 == 0  # Process every 2nd frame
+            return self.frame_counter % 3 == 0  # Process every 3rd frame (was 2)
         else:  # high quality
-            return True  # Process every frame
+            return self.frame_counter % 2 == 0  # Process every 2nd frame (was every frame)
     
     def start(self):
         """Start recording thread"""
