@@ -90,6 +90,14 @@ class Camera(BaseModel):
     pre_recording_seconds: float = 5.0  # Buffer before motion
     post_recording_seconds: float = 5.0  # Continue recording after motion
     motion_cooldown_seconds: float = 2.0  # Gap between motion events
+    # Advanced motion detection settings
+    motion_algorithm: str = "mog2"  # "basic", "mog2", "knn"
+    min_object_area: int = 500  # Minimum area in pixels to consider as motion
+    blur_size: int = 21  # GaussianBlur kernel size (must be odd)
+    motion_threshold: int = 25  # Threshold for frame differencing (basic mode)
+    mog2_history: int = 500  # Number of frames for MOG2 learning
+    mog2_var_threshold: int = 16  # MOG2 threshold for foreground detection
+    detect_shadows: bool = True  # Detect and ignore shadows (MOG2 only)
     # Telegram notifications
     telegram_send_notification: bool = False  # Send text notification
     telegram_send_video: bool = False  # Send video file
