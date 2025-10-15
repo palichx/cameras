@@ -1233,6 +1233,13 @@ def main():
         ("Bulk Delete Recordings", tester.test_bulk_delete_recordings),
         ("Delete by Date Range", tester.test_delete_by_date_range),
         ("Delete by Camera", tester.test_delete_by_camera),
+        # === MINIMUM MOTION DURATION TESTS ===
+        ("Camera min_motion_duration Field", tester.test_camera_min_motion_duration_field),
+        ("Create Camera with min_motion_duration", tester.test_create_camera_with_min_motion_duration),
+        ("Update Camera min_motion_duration", tester.test_update_camera_min_motion_duration),
+        ("min_motion_duration Edge Cases", tester.test_min_motion_duration_edge_cases),
+        ("Motion Duration Logic via Logs", tester.test_motion_duration_logic_via_logs),
+        ("Camera Recorder Restart on Update", tester.test_camera_recorder_restart_on_update),
         # === EXCLUSION ZONES TESTS ===
         ("Camera Snapshot Endpoint", tester.test_camera_snapshot_endpoint),
         ("Rectangle Exclusion Zones", tester.test_exclusion_zones_rectangle),
