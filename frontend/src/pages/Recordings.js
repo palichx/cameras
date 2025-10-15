@@ -92,11 +92,19 @@ const Recordings = () => {
   const handlePlay = (recording) => {
     setPlayingRecording(recording);
     setShowPlayer(true);
+    setVideoError(false);
   };
 
   const handleClosePlayer = () => {
     setShowPlayer(false);
     setPlayingRecording(null);
+    setVideoError(false);
+  };
+
+  const handleVideoError = (e) => {
+    console.error('Video playback error:', e);
+    setVideoError(true);
+    toast.error('Ошибка воспроизведения видео. Попробуйте скачать файл.');
   };
 
   const handleDownload = async (recordingId, cameraName, startTime) => {
