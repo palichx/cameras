@@ -154,17 +154,184 @@ const StatCard = ({ icon, label, value, color, testId }) => {
 
 const CameraCard = ({ camera }) => {
   const [isLive, setIsLive] = useState(false);
+  const [showFullscreen, setShowFullscreen] = useState(false);
+
+  const openInNewWindow = () => {
+    const width = 1280;
+    const height = 720;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+    
+    const newWindow = window.open(
+      '',
+      `camera_${camera.id}`,
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no`
+    );
+    
+    if (newWindow) {
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${camera.name} - Live View</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+                background: #000;
+                overflow: hidden;
+                font-family: Arial, sans-serif;
+              }
+              #container {
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+              }
+              #header {
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 10px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              }
+              #video-container {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                position: relative;
+              }
+              #video {
+                max-width: 100%;
+                max-height: 100%;
+                object-fit: contain;
+                transition: transform 0.3s;
+              }
+              #controls {
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 15px;
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+              }
+              button {
+                background: rgba(255,255,255,0.2);
+                border: none;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background 0.3s;
+              }
+              button:hover {
+                background: rgba(255,255,255,0.3);
+              }
+              .active {
+                background: rgba(59, 130, 246, 0.8) !important;
+              }
+            </style>
+          </head>
+          <body>
+            <div id="container">
+              <div id="header">
+                <h2 style="margin: 0;">${camera.name}</h2>
+                <button onclick="window.close()">✕ Закрыть</button>
+              </div>
+              <div id="video-container">
+                <img id="video" src="${API}/stream/${camera.id}" alt="${camera.name}" />
+              </div>
+              <div id="controls">
+                <button onclick="zoom(1)">100%</button>
+                <button onclick="zoom(1.5)">150%</button>
+                <button onclick="zoom(2)">200%</button>
+                <button onclick="zoom(3)">300%</button>
+                <button onclick="resetZoom()">Сбросить</button>
+              </div>
+            </div>
+            <script>
+              const video = document.getElementById('video');
+              let currentZoom = 1;
+              
+              function zoom(scale) {
+                currentZoom = scale;
+                video.style.transform = 'scale(' + scale + ')';
+                updateActiveButton(scale);
+              }
+              
+              function resetZoom() {
+                zoom(1);
+              }
+              
+              function updateActiveButton(scale) {
+                const buttons = document.querySelectorAll('#controls button');
+                buttons.forEach(btn => btn.classList.remove('active'));
+                const activeBtn = Array.from(buttons).find(btn => btn.textContent.includes(Math.round(scale * 100) + '%'));
+                if (activeBtn) activeBtn.classList.add('active');
+              }
+              
+              // Keyboard shortcuts
+              document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') window.close();
+                if (e.key === '1') zoom(1);
+                if (e.key === '2') zoom(1.5);
+                if (e.key === '3') zoom(2);
+                if (e.key === '4') zoom(3);
+                if (e.key === '0') resetZoom();
+              });
+              
+              // Error handling
+              video.onerror = () => {
+                video.style.display = 'none';
+                document.getElementById('video-container').innerHTML = '<p style="color: white;">Ошибка загрузки видео</p>';
+              };
+              
+              updateActiveButton(1);
+            </script>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+    }
+  };
 
   return (
     <Card className="overflow-hidden hover:shadow-xl transition-shadow" data-testid={`camera-card-${camera.id}`}>
-      <div className="video-container bg-slate-900">
+      <div className="video-container bg-slate-900 relative group">
         {isLive ? (
-          <img
-            src={`${API}/stream/${camera.id}`}
-            alt={camera.name}
-            className="w-full h-full object-cover"
-            onError={() => setIsLive(false)}
-          />
+          <>
+            <img
+              src={`${API}/stream/${camera.id}`}
+              alt={camera.name}
+              className="w-full h-full object-cover"
+              onError={() => setIsLive(false)}
+            />
+            {/* Overlay controls */}
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+              <button
+                onClick={() => setIsLive(false)}
+                data-testid={`stop-camera-${camera.id}`}
+                className="w-12 h-12 rounded-full bg-red-500/80 backdrop-blur-sm flex items-center justify-center hover:bg-red-600/80 transition-colors"
+                title="Остановить"
+              >
+                <div className="w-4 h-4 bg-white rounded-sm"></div>
+              </button>
+              <button
+                onClick={openInNewWindow}
+                data-testid={`open-window-${camera.id}`}
+                className="w-12 h-12 rounded-full bg-blue-500/80 backdrop-blur-sm flex items-center justify-center hover:bg-blue-600/80 transition-colors"
+                title="Открыть в окне"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </button>
+            </div>
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <button
