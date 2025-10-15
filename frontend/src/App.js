@@ -126,6 +126,7 @@ function App() {
             <Route path="/cameras" element={<CameraManagement />} />
             <Route path="/recordings" element={<Recordings />} />
             <Route path="/motion-events" element={<MotionEvents />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Layout>
       </BrowserRouter>
