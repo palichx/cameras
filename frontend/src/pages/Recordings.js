@@ -238,9 +238,7 @@ const Recordings = () => {
           break;
 
         case 'camera':
-          response = await axios.post(`${API}/recordings/delete-by-camera`, null, {
-            params: { camera_id: deleteAction.cameraId }
-          });
+          response = await axios.post(`${API}/recordings/delete-by-camera?camera_id=${deleteAction.cameraId}`);
           toast.success(`Удалено ${response.data.deleted} записей`);
           break;
 
