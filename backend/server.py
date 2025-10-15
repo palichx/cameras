@@ -478,7 +478,7 @@ class CameraRecorder:
                             for buffered_frame in self.pre_record_buffer:
                                 if self.motion_writer:
                                     self.motion_writer.write(buffered_frame)
-                            run_async_from_thread(self._save_motion_event(frame))
+                            run_async_in_executor(self._save_motion_event(frame))
                             self.motion_state = "recording"
                         
                         elif self.motion_state == "cooldown":
@@ -516,7 +516,7 @@ class CameraRecorder:
                             daemon=True
                         ).start()
                     
-                    run_async_from_thread(self._save_recording_metadata(self.current_recording, "continuous"))
+                    run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
                     
                     continuous_file = self._create_recording_file("continuous")
                     continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
@@ -535,7 +535,7 @@ class CameraRecorder:
                         daemon=True
                     ).start()
                 
-                run_async_from_thread(self._save_recording_metadata(self.current_recording, "continuous"))
+                run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
             
             if self.motion_writer:
                 self._stop_motion_recording()
@@ -602,7 +602,7 @@ class CameraRecorder:
                         for buffered_frame in self.pre_record_buffer:
                             if self.motion_writer:
                                 self.motion_writer.write(buffered_frame)
-                        run_async_from_thread(self._save_motion_event(frame))
+                        run_async_in_executor(self._save_motion_event(frame))
                         self.motion_state = "recording"
                     
                     elif self.motion_state == "cooldown":
@@ -640,7 +640,7 @@ class CameraRecorder:
                         daemon=True
                     ).start()
                 
-                run_async_from_thread(self._save_recording_metadata(self.current_recording, "continuous"))
+                run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
                 
                 continuous_file = self._create_recording_file("continuous")
                 continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
@@ -661,7 +661,7 @@ class CameraRecorder:
                     daemon=True
                 ).start()
             
-            run_async_from_thread(self._save_recording_metadata(self.current_recording, "continuous"))
+            run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
         
         if self.motion_writer:
             self._stop_motion_recording()
@@ -729,7 +729,7 @@ class CameraRecorder:
                         logger.info(f"Motion detected - wrote {len(self.pre_record_buffer)} pre-recorded frames")
                         
                         # Save motion event
-                        run_async_from_thread(self._save_motion_event(frame))
+                        run_async_in_executor(self._save_motion_event(frame))
                         self.motion_state = "recording"
                     
                     elif self.motion_state == "cooldown":
@@ -781,7 +781,7 @@ class CameraRecorder:
                     )
                     conversion_thread.start()
                 
-                run_async_from_thread(self._save_recording_metadata(self.current_recording, "continuous"))
+                run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
                 
                 continuous_file = self._create_recording_file("continuous")
                 continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
@@ -801,7 +801,7 @@ class CameraRecorder:
                 )
                 conversion_thread.start()
             
-            run_async_from_thread(self._save_recording_metadata(self.current_recording, "continuous"))
+            run_async_in_executor(self._save_recording_metadata(self.current_recording, "continuous"))
         
         if self.motion_writer:
             self._stop_motion_recording()
@@ -847,7 +847,7 @@ class CameraRecorder:
                 )
                 conversion_thread.start()
             
-            run_async_from_thread(self._save_recording_metadata(self.motion_file_path, "motion"))
+            run_async_in_executor(self._save_recording_metadata(self.motion_file_path, "motion"))
             logger.info(f"Stopped motion recording: {self.motion_file_path}")
         
         self.motion_file_path = None
@@ -864,7 +864,7 @@ class CameraRecorder:
                 
                 # Send to Telegram
                 if self.camera.telegram_send_video and telegram_video_path:
-                    run_async_from_thread(send_telegram_notification(
+                    run_async_in_executor(send_telegram_notification(
                         self.camera.name,
                         self.motion_start_time_dt,
                         telegram_video_path
@@ -877,7 +877,7 @@ class CameraRecorder:
                         pass
                 elif self.camera.telegram_send_notification:
                     # Send notification only
-                    run_async_from_thread(send_telegram_notification(
+                    run_async_in_executor(send_telegram_notification(
                         self.camera.name,
                         self.motion_start_time_dt,
                         None
@@ -890,7 +890,7 @@ class CameraRecorder:
         """Convert video to H.264 codec for browser compatibility (uses settings from DB)"""
         try:
             # Get settings from database
-            settings_doc = run_async_from_thread(db.settings.find_one({"id": "system_settings"}, {"_id": 0}))
+            settings_doc = run_async_in_executor(db.settings.find_one({"id": "system_settings"}, {"_id": 0}))
             
             if settings_doc and settings_doc.get('ffmpeg', {}).get('enabled') == False:
                 logger.info(f"H.264 conversion disabled in settings, skipping: {file_path}")
