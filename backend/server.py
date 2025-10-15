@@ -395,8 +395,11 @@ class CameraRecorder:
             if self.motion_writer:
                 self._stop_motion_recording()
             
+            return True
+            
         except Exception as e:
             logger.error(f"Error in HTTP MJPEG recording: {str(e)}")
+            return False
     
     def _record_http_snapshot(self):
         """Record from HTTP snapshot URL with pre/post recording"""
