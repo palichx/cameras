@@ -134,6 +134,30 @@ class StorageStats(BaseModel):
     recordings_count: int
     recordings_size_gb: float
 
+class FFmpegSettings(BaseModel):
+    preset: str = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium
+    crf: int = 30  # 18-35, lower = better quality
+    max_resolution: str = "720p"  # 480p, 720p, 1080p, original
+    target_fps: int = 15  # 10, 15, 20, 30
+    audio_bitrate: str = "64k"  # 32k, 64k, 128k
+    threads: int = 2  # 1, 2, 4, auto
+    enabled: bool = True
+
+class TelegramSettings(BaseModel):
+    enabled: bool = False
+    bot_token: Optional[str] = None
+    chat_id: Optional[str] = None
+    send_motion_alerts: bool = True
+    send_error_alerts: bool = True
+
+class SystemSettings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default="system_settings")  # Singleton
+    ffmpeg: FFmpegSettings = Field(default_factory=FFmpegSettings)
+    telegram: TelegramSettings = Field(default_factory=TelegramSettings)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Camera Recorder Class
 class CameraRecorder:
     def __init__(self, camera: Camera):
