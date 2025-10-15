@@ -8,7 +8,7 @@ import Recordings from './pages/Recordings';
 import MotionEvents from './pages/MotionEvents';
 import Settings from './pages/Settings';
 import { Toaster } from './components/ui/sonner';
-import { Video, Settings as SettingsIcon, FileVideo, Activity, BarChart3 } from 'lucide-react';
+import { Video, Settings as SettingsIcon, FileVideo, Activity, BarChart3, Camera } from 'lucide-react';
 
 // Use environment variable for backend URL, fallback to localhost for development
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
