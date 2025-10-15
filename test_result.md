@@ -186,14 +186,14 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Reuse existing CameraRecorder for live streams"
-    - "Verify no duplicate camera connections when opening in new windows"
+    - "Add excluded_zones field to Camera model"
+    - "Modify MOG2 detection to apply exclusion mask"
+    - "API endpoint for saving exclusion zones"
+    - "Create ExclusionZoneEditor component"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
     - agent: "main"
-      message: "Backend optimization implemented to reuse existing CameraRecorder instances for live streams. The get_live_stream endpoint now checks active_recorders dict and uses cached frames (recorder.last_frame) instead of creating new cv2.VideoCapture connections. This should reduce CPU load when opening cameras in new windows. Backend service restarted successfully and running. Need to test: 1) Start camera recording, 2) Open live view in new window, 3) Verify logs show 'Using cached frames from active recorder' message, 4) Check CPU usage doesn't double with multiple windows."
-    - agent: "testing"
-      message: "✅ CAMERA STREAM REUSE OPTIMIZATION FULLY TESTED AND WORKING. All success criteria met: 1) Active cameras show 'Using cached frames from active recorder' in logs ✅, 2) Inactive cameras show 'creating temporary stream' in logs ✅, 3) No duplicate connections created - multiple requests reuse same recorder ✅, 4) Stream returns valid MJPEG frames ✅. Backend logs confirm optimization working with 8+ reuse messages and 2+ fallback messages. CPU load reduction achieved as intended. Ready for production use."
+      message: "Starting implementation of exclusion zones feature to prevent false motion detection from timestamp overlays. Plan: 1) Add excluded_zones field to Camera model, 2) Modify MOG2 detection to apply mask, 3) Create API endpoints, 4) Build canvas-based zone editor UI with rectangle and polygon drawing tools. Will implement backend first, then frontend."
