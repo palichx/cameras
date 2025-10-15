@@ -162,6 +162,10 @@ class CameraRecorder:
         self.frame_skip = 2  # Process every Nth frame for motion detection
         self.frame_counter = 0
         
+        # H.264 conversion settings
+        self.enable_h264_conversion = True  # Set to False to disable conversion
+        self.conversion_queue = []  # Queue for async conversion
+        
     def build_stream_url(self):
         """Build stream URL with authentication"""
         stream_url = self.camera.stream_url
