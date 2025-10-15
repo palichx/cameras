@@ -96,14 +96,18 @@ def start_telegram_bot_if_configured():
         settings_doc = sync_db.settings.find_one({"id": "system_settings"}, {"_id": 0})
         sync_client.close()
         
+        logger.info(f"Telegram settings check: doc exists={settings_doc is not None}")
+        
         if settings_doc:
             telegram = settings_doc.get('telegram', {})
+            logger.info(f"Telegram config: enabled={telegram.get('enabled')}, has_token={bool(telegram.get('bot_token'))}, has_chat={bool(telegram.get('chat_id'))}")
+            
             if telegram.get('enabled') and telegram.get('bot_token') and telegram.get('chat_id'):
                 from telegram_bot import VideoSurveillanceBot
                 from threading import Thread
                 
                 bot_token = telegram['bot_token']
-                chat_id = telegram['chat_id']
+                chat_id = str(telegram['chat_id'])  # Convert to string
                 
                 telegram_bot_instance = VideoSurveillanceBot(
                     bot_token=bot_token,
@@ -125,7 +129,7 @@ def start_telegram_bot_if_configured():
             logger.info("Settings not found, Telegram bot not started")
             return False
     except Exception as e:
-        logger.error(f"Failed to start Telegram bot: {e}")
+        logger.error(f"Failed to start Telegram bot: {e}", exc_info=True)
         return False
 
 # Define Models
