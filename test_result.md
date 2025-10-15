@@ -131,7 +131,7 @@ backend:
 
 frontend:
   - task: "Add min_motion_duration slider in CameraManagement"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/frontend/src/pages/CameraManagement.js"
     stuck_count: 0
@@ -140,7 +140,7 @@ frontend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Add slider for min_motion_duration with range 0.1-10 seconds, default 1 second"
+          comment: "Added slider for min_motion_duration with range 0.1-10 seconds, default 1 second. Positioned after motion_sensitivity slider. Includes helper text explaining it filters brief false alarms."
 
 metadata:
   created_by: "main_agent"
