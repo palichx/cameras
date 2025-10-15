@@ -106,7 +106,7 @@ user_problem_statement: "Add minimum motion duration parameter to ignore brief m
 
 backend:
   - task: "Add min_motion_duration field to Camera model"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
@@ -115,10 +115,10 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Need to add min_motion_duration: float = 1.0 field to Camera, CameraCreate, CameraUpdate models"
+          comment: "Added min_motion_duration: float = 1.0 field to Camera, CameraCreate, CameraUpdate models. Default is 1 second."
 
   - task: "Implement motion duration tracking in detection logic"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
@@ -127,7 +127,7 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Need to track motion start time and only trigger recording/notification if motion duration >= min_motion_duration"
+          comment: "Added motion_first_detected_time tracking variable. Modified _record_rtsp, _record_http_mjpeg, _record_http_snapshot to track motion duration. Recording only starts if motion_duration >= min_motion_duration. Logs show motion duration when triggering recording. Short motions are filtered out with debug log."
 
 frontend:
   - task: "Add min_motion_duration slider in CameraManagement"
