@@ -225,6 +225,32 @@ const CameraCard = ({ camera, status }) => {
                 max-height: 100%;
                 object-fit: contain;
                 transition: transform 0.3s;
+                display: none;
+              }
+              #video.loaded {
+                display: block;
+              }
+              #loading {
+                position: absolute;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+                color: white;
+              }
+              #loading.hidden {
+                display: none;
+              }
+              .spinner {
+                width: 50px;
+                height: 50px;
+                border: 4px solid rgba(255,255,255,0.2);
+                border-top-color: #3b82f6;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+              }
+              @keyframes spin {
+                to { transform: rotate(360deg); }
               }
               #controls {
                 background: rgba(0,0,0,0.8);
@@ -259,7 +285,70 @@ const CameraCard = ({ camera, status }) => {
                 <button onclick="window.close()">✕ Закрыть</button>
               </div>
               <div id="video-container">
-                <img id="video" src="${API}/stream/${camera.id}" alt="${camera.name}" />
+                <div id="loading">
+                  <div class="spinner"></div>
+                  <div>Подключение к камере...</div>
+                </div>
+                <img id="video" alt="${camera.name}" />
+              </div>
+              <div id="controls">
+                <button onclick="zoom(1)">100%</button>
+                <button onclick="zoom(1.5)">150%</button>
+                <button onclick="zoom(2)">200%</button>
+                <button onclick="zoom(3)">300%</button>
+                <button onclick="resetZoom()">Сбросить</button>
+              </div>
+            </div>
+            <script>
+              const video = document.getElementById('video');
+              const loading = document.getElementById('loading');
+              let currentZoom = 1;
+              let firstFrameLoaded = false;
+              
+              // Start loading video after DOM is ready
+              video.onload = function() {
+                if (!firstFrameLoaded) {
+                  firstFrameLoaded = true;
+                  loading.classList.add('hidden');
+                  video.classList.add('loaded');
+                }
+              };
+              
+              video.onerror = function() {
+                loading.innerHTML = '<div class="spinner"></div><div>Ошибка подключения к камере</div>';
+              };
+              
+              // Set src after handlers are attached
+              setTimeout(() => {
+                video.src = '${API}/stream/${camera.id}?t=' + Date.now();
+              }, 100);
+              
+              function zoom(scale) {
+                currentZoom = scale;
+                video.style.transform = 'scale(' + scale + ')';
+                updateActiveButton(scale);
+              }
+              
+              function resetZoom() {
+                zoom(1);
+              }
+              
+              function updateActiveButton(scale) {
+                const buttons = document.querySelectorAll('#controls button');
+                buttons.forEach(btn => btn.classList.remove('active'));
+                const activeBtn = Array.from(buttons).find(btn => btn.textContent.includes(Math.round(scale * 100) + '%'));
+                if (activeBtn) activeBtn.classList.add('active');
+              }
+              
+              // Initialize
+              updateActiveButton(1);
+            </script>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+    }
+  };
               </div>
               <div id="controls">
                 <button onclick="zoom(1)">100%</button>
