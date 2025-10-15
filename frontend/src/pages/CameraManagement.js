@@ -10,8 +10,9 @@ import { Slider } from '../components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
-import { Plus, Trash2, Settings, Play, Pause } from 'lucide-react';
+import { Plus, Trash2, Settings, Play, Pause, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import ExclusionZoneEditor from '../components/ExclusionZoneEditor';
 
 const CameraManagement = () => {
   const [cameras, setCameras] = useState([]);
@@ -19,6 +20,8 @@ const CameraManagement = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedCamera, setSelectedCamera] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showZoneEditor, setShowZoneEditor] = useState(false);
+  const [zoneEditorCamera, setZoneEditorCamera] = useState(null);
 
   useEffect(() => {
     fetchCameras();
