@@ -29,18 +29,25 @@ import concurrent.futures
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Create a global executor for running async tasks
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+
 # Helper function to run async code from thread
-def run_async_from_thread(coro):
-    """Safely run async function from a thread"""
-    try:
+def run_async_in_executor(coro):
+    """Run async coroutine in a separate thread with its own event loop"""
+    def run_in_thread():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             return loop.run_until_complete(coro)
         finally:
             loop.close()
+    
+    future = executor.submit(run_in_thread)
+    try:
+        return future.result(timeout=10)  # Wait up to 10 seconds
     except Exception as e:
-        logger.error(f"Error running async from thread: {e}")
+        logger.error(f"Error running async in executor: {e}")
         return None
 
 # MongoDB connection
