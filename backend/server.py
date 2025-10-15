@@ -779,7 +779,8 @@ class CameraRecorder:
             frame = self._get_http_snapshot(stream_url, auth)
             
             if frame is None:
-                time.sleep(self.camera.snapshot_interval)
+                # Use longer sleep for failed reads to reduce CPU
+                time.sleep(max(self.camera.snapshot_interval, 0.5))  # At least 0.5s
                 continue
             
             # Initialize dimensions on first frame
