@@ -196,4 +196,4 @@ test_plan:
 
 agent_communication:
     - agent: "main"
-      message: "Starting implementation of exclusion zones feature to prevent false motion detection from timestamp overlays. Plan: 1) Add excluded_zones field to Camera model, 2) Modify MOG2 detection to apply mask, 3) Create API endpoints, 4) Build canvas-based zone editor UI with rectangle and polygon drawing tools. Will implement backend first, then frontend."
+      message: "Implemented exclusion zones feature for motion detection. Backend: Added excluded_zones field to Camera model, modified _detect_motion_bg_subtraction() to apply exclusion mask using cv2.bitwise_and(), created GET /api/cameras/{camera_id}/snapshot and PUT /api/cameras/{camera_id}/excluded-zones endpoints. Frontend: Created ExclusionZoneEditor component with canvas-based drawing tools (rectangles and polygons), integrated into CameraManagement with MapPin button. Both services restarted successfully. Ready for testing: 1) Get snapshot endpoint, 2) Save exclusion zones, 3) Motion detection with exclusion masks, 4) UI zone drawing tools."
