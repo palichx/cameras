@@ -148,6 +148,7 @@ class Camera(BaseModel):
     motion_detection: bool = True
     motion_sensitivity: float = 0.5  # 0.0 to 1.0
     detection_zones: List[Dict[str, Any]] = []  # List of polygons
+    excluded_zones: List[Dict[str, Any]] = []  # Zones to exclude from motion detection (e.g., timestamp)
     # Motion detection recording settings
     pre_recording_seconds: float = 5.0  # Buffer before motion
     post_recording_seconds: float = 5.0  # Continue recording after motion
