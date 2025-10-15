@@ -1365,50 +1365,38 @@ class CameraRecorder:
             return self._detect_motion_basic(frame)
     
     def _detect_motion_bg_subtraction(self, frame) -> bool:
-        """Advanced motion detection using Background Subtraction (MOG2/KNN)"""
-        # Apply background subtractor
-        fg_mask = self.bg_subtractor.apply(frame)
+        """Detect motion using MOG2 with optimizations for CPU"""
+        if frame is None:
+            return False
         
-        # Remove shadows (value 127 in MOG2)
-        if self.camera.detect_shadows:
-            fg_mask[fg_mask == 127] = 0
-        
-        # Apply detection zones if specified
-        if self.camera.detection_zones:
-            mask = np.zeros(fg_mask.shape, dtype=np.uint8)
-            for zone in self.camera.detection_zones:
-                points = np.array([[p['x'], p['y']] for p in zone['points']], dtype=np.int32)
-                cv2.fillPoly(mask, [points], 255)
-            fg_mask = cv2.bitwise_and(fg_mask, mask)
-        
-        # Morphological operations to reduce noise
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel)  # Remove noise
-        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, kernel)  # Fill holes
-        
-        # Find contours and filter by minimum area
-        contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        significant_motion = 0
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area >= self.camera.min_object_area:
-                significant_motion += area
-        
-        # Calculate motion percentage
-        total_pixels = fg_mask.shape[0] * fg_mask.shape[1]
-        motion_percentage = significant_motion / total_pixels
-        
-        # Dynamic threshold based on sensitivity
-        threshold = 0.001 + (1 - self.camera.motion_sensitivity) * 0.009  # 0.001 to 0.01
-        
-        # Temporal filtering - require motion in multiple consecutive frames
-        current_motion = motion_percentage > threshold
-        self.motion_buffer.append(current_motion)
-        
-        # Motion detected if present in at least 3 of last 5 frames
-        motion_count = sum(self.motion_buffer)
-        return motion_count >= 3
+        try:
+            # OPTIMIZATION 1: Resize frame for motion detection (4x less pixels to process)
+            small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_NEAREST)
+            
+            # Apply background subtraction
+            fg_mask = self.bg_subtractor.apply(small_frame)
+            
+            # OPTIMIZATION 2: Simple threshold instead of morphological operations for speed
+            _, fg_mask = cv2.threshold(fg_mask, 200, 255, cv2.THRESH_BINARY)
+            
+            # OPTIMIZATION 3: Count non-zero pixels directly (faster than contours)
+            motion_pixels = cv2.countNonZero(fg_mask)
+            
+            # Convert area threshold to match resized frame (4x smaller)
+            adjusted_threshold = self.camera.min_object_area / 4
+            
+            # Temporal filtering with simpler logic
+            motion_detected = motion_pixels > adjusted_threshold
+            self.motion_buffer.append(1 if motion_detected else 0)
+            
+            # Require motion in at least 3 of last 5 frames (reduces false positives)
+            temporal_motion = sum(self.motion_buffer) >= 3
+            
+            return temporal_motion
+            
+        except Exception as e:
+            logger.error(f"Error in motion detection: {str(e)}")
+            return False
     
     def _detect_motion_basic(self, frame) -> bool:
         """Basic motion detection using improved frame differencing"""
