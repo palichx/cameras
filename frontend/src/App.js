@@ -10,8 +10,8 @@ import Settings from './pages/Settings';
 import { Toaster } from './components/ui/sonner';
 import { Video, Settings as SettingsIcon, FileVideo, Activity, BarChart3, Camera } from 'lucide-react';
 
-// Use environment variable for backend URL, fallback to localhost for development
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+// Use environment variable for backend URL, or use relative path for same-origin requests
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 export const API = `${BACKEND_URL}/api`;
 
 const Layout = ({ children }) => {
