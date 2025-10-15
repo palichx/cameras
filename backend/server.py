@@ -372,6 +372,7 @@ class CameraRecorder:
         self.motion_start_time = None
         self.motion_start_time_dt = None  # For Telegram notification
         self.motion_end_time = None
+        self.motion_first_detected_time = None  # Track when motion was first detected (before min_duration check)
         
         # Error handling and reconnection
         self.error_count = 0
