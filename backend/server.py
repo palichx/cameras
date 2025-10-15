@@ -1000,34 +1000,51 @@ class CameraRecorder:
                 motion_detected = self._detect_motion(frame)
                 
                 if motion_detected:
-                    self.last_motion_time = time.time()
+                    current_time = time.time()
+                    self.last_motion_time = current_time
                     frames_since_motion = 0
                     
-                    # Start recording if not already
-                    if self.motion_state == "idle":
-                        self._start_motion_recording(fps, width, height)
-                        # Write pre-recorded frames
-                        for buffered_frame in self.pre_record_buffer:
-                            if self.motion_writer:
-                                self.motion_writer.write(buffered_frame)
-                        logger.info(f"Motion detected - wrote {len(self.pre_record_buffer)} pre-recorded frames")
+                    # Track when motion was first detected
+                    if self.motion_first_detected_time is None:
+                        self.motion_first_detected_time = current_time
+                    
+                    # Calculate motion duration
+                    motion_duration = current_time - self.motion_first_detected_time
+                    
+                    # Only trigger recording if motion duration >= min_motion_duration
+                    if motion_duration >= self.camera.min_motion_duration:
+                        # Start recording if not already
+                        if self.motion_state == "idle":
+                            self._start_motion_recording(fps, width, height)
+                            # Write pre-recorded frames
+                            for buffered_frame in self.pre_record_buffer:
+                                if self.motion_writer:
+                                    self.motion_writer.write(buffered_frame)
+                            logger.info(f"Motion detected (duration: {motion_duration:.1f}s) - wrote {len(self.pre_record_buffer)} pre-recorded frames")
+                            
+                            # Save motion event
+                            self._save_motion_event_sync(frame)
+                            self.motion_state = "recording"
                         
-                        # Save motion event
-                        self._save_motion_event_sync(frame)
-                        self.motion_state = "recording"
-                    
-                    elif self.motion_state == "cooldown":
-                        # Motion resumed during cooldown - CONTINUE recording, don't create new file
-                        logger.info("Motion resumed during cooldown - continuing recording")
-                        self.motion_state = "recording"
-                    
-                    # Always write frame when motion detected and recording
-                    if self.motion_writer and self.motion_state == "recording":
-                        self.motion_writer.write(frame)
+                        elif self.motion_state == "cooldown":
+                            # Motion resumed during cooldown - CONTINUE recording, don't create new file
+                            logger.info("Motion resumed during cooldown - continuing recording")
+                            self.motion_state = "recording"
+                        
+                        # Always write frame when motion detected and recording
+                        if self.motion_writer and self.motion_state == "recording":
+                            self.motion_writer.write(frame)
                 
                 else:
                     # No motion detected
                     frames_since_motion += 1
+                    
+                    # Reset motion first detected time when no motion
+                    if self.motion_first_detected_time is not None:
+                        motion_duration = time.time() - self.motion_first_detected_time
+                        if motion_duration < self.camera.min_motion_duration:
+                            logger.debug(f"Motion too short ({motion_duration:.1f}s < {self.camera.min_motion_duration}s), ignoring")
+                        self.motion_first_detected_time = None
                     
                     if self.motion_state == "recording":
                         # Continue writing for post-recording period
