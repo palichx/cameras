@@ -875,7 +875,7 @@ class CameraRecorder:
                         self.camera.name,
                         self.motion_start_time_dt,
                         telegram_video_path
-                    ))
+                    )
                     # Clean up telegram video after sending
                     try:
                         if os.path.exists(telegram_video_path):
@@ -888,7 +888,7 @@ class CameraRecorder:
                         self.camera.name,
                         self.motion_start_time_dt,
                         None
-                    ))
+                    )
                     
         except Exception as e:
             logger.error(f"Error in async H.264 conversion: {e}")
