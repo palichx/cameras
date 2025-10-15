@@ -666,14 +666,24 @@ class CameraRecorder:
         self.motion_file_path = None
     
     def _convert_to_h264(self, file_path: str):
-        """Convert video to H.264 codec for browser compatibility"""
+        """Convert video to H.264 codec for browser compatibility (optimized for low CPU)"""
         try:
             temp_path = file_path + ".tmp.mp4"
             
-            # Use ffmpeg to convert to H.264
+            # Use ffmpeg with optimized settings for low CPU usage
+            # - preset ultrafast: fastest encoding, less CPU
+            # - crf 30: lower quality, smaller files, less CPU
+            # - scale: reduce to 720p max for smaller files
+            # - fps: limit to 15 fps for surveillance
+            # - threads: use multiple cores efficiently
             result = os.system(
-                f'ffmpeg -i "{file_path}" -c:v libx264 -preset fast -crf 23 '
-                f'-c:a aac -movflags +faststart "{temp_path}" -y '
+                f'ffmpeg -i "{file_path}" '
+                f'-c:v libx264 -preset ultrafast -crf 30 '
+                f'-vf "scale=\'min(1280,iw)\':\'min(720,ih)\':force_original_aspect_ratio=decrease,fps=15" '
+                f'-c:a aac -b:a 64k '
+                f'-movflags +faststart '
+                f'-threads 2 '
+                f'"{temp_path}" -y '
                 f'> /dev/null 2>&1'
             )
             
