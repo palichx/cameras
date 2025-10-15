@@ -880,7 +880,7 @@ class CameraRecorder:
         return True
     
     def _process_frames(self, cap, source_type="rtsp"):
-        """Process frames from video capture with pre/post recording buffer"""
+        """Process frames from video capture with pre/post recording buffer and resilient reconnection"""
         fps = int(cap.get(cv2.CAP_PROP_FPS)) or 20
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -893,12 +893,152 @@ class CameraRecorder:
         continuous_writer = None
         frame_count = 0
         frames_since_motion = 0
+        consecutive_read_failures = 0
+        max_read_failures = 30  # Reconnect after 30 failed reads
         
         if self.camera.continuous_recording:
             continuous_file = self._create_recording_file("continuous")
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             continuous_writer = cv2.VideoWriter(continuous_file, fourcc, fps, (width, height))
             self.current_recording = continuous_file
+        
+        while not self.stop_event.is_set():
+            # Adapt quality based on connection
+            self._adapt_quality_based_on_connection()
+            
+            # Read frame with timeout handling
+            ret, frame = cap.read()
+            
+            if not ret or frame is None:
+                consecutive_read_failures += 1
+                logger.warning(f"Failed to read frame from {self.camera.name} ({consecutive_read_failures}/{max_read_failures})")
+                
+                if consecutive_read_failures >= max_read_failures:
+                    logger.error(f"Too many read failures, attempting reconnection...")
+                    cap.release()
+                    
+                    # Try to reconnect
+                    stream_url = self.build_stream_url()
+                    new_cap, first_frame = self._create_video_capture_with_retry(stream_url)
+                    
+                    if new_cap is None:
+                        logger.error(f"Reconnection failed, stopping recorder for {self.camera.name}")
+                        break
+                    
+                    # Update cap and continue
+                    cap = new_cap
+                    frame = first_frame
+                    consecutive_read_failures = 0
+                    logger.info(f"✅ Successfully reconnected to {self.camera.name}")
+                else:
+                    time.sleep(0.1)
+                    continue
+            
+            # Reset failure counter on successful read
+            consecutive_read_failures = 0
+            self.last_successful_frame = time.time()
+            self.last_frame = frame
+            self.frame_counter += 1
+            
+            # Add to pre-record buffer
+            if len(self.pre_record_buffer) >= pre_buffer_frames:
+                self.pre_record_buffer.popleft()
+            self.pre_record_buffer.append(frame.copy())
+            
+            # Write to continuous recording
+            if continuous_writer:
+                continuous_writer.write(frame)
+            
+            # Motion detection (adaptive processing)
+            if self.camera.motion_detection and self._should_process_frame_for_motion():
+                motion_detected = self._detect_motion(frame)
+                
+                if motion_detected:
+                    self.last_motion_time = time.time()
+                    frames_since_motion = 0
+                    
+                    # Start recording if not already
+                    if self.motion_state == "idle":
+                        self._start_motion_recording(fps, width, height)
+                        # Write pre-recorded frames
+                        for buffered_frame in self.pre_record_buffer:
+                            if self.motion_writer:
+                                self.motion_writer.write(buffered_frame)
+                        logger.info(f"Motion detected - wrote {len(self.pre_record_buffer)} pre-recorded frames")
+                        
+                        # Save motion event
+                        self._save_motion_event_sync(frame)
+                        self.motion_state = "recording"
+                    
+                    elif self.motion_state == "cooldown":
+                        # Motion resumed during cooldown - CONTINUE recording, don't create new file
+                        logger.info("Motion resumed during cooldown - continuing recording")
+                        self.motion_state = "recording"
+                    
+                    # Always write frame when motion detected and recording
+                    if self.motion_writer and self.motion_state == "recording":
+                        self.motion_writer.write(frame)
+                
+                else:
+                    # No motion detected
+                    frames_since_motion += 1
+                    
+                    if self.motion_state == "recording":
+                        # Continue writing for post-recording period
+                        if frames_since_motion <= post_buffer_frames:
+                            if self.motion_writer:
+                                self.motion_writer.write(frame)
+                        else:
+                            # End recording and enter cooldown
+                            self._stop_motion_recording()
+                            self.motion_state = "cooldown"
+                            self.motion_end_time = time.time()
+                            logger.info(f"Motion ended - post-recording complete")
+                    elif self.motion_state == "cooldown":
+                        if frames_since_motion > cooldown_frames:
+                            self.motion_state = "idle"
+            
+            frame_count += 1
+            
+            # Rotate continuous recording every 10 minutes
+            if continuous_writer and frame_count >= fps * 600:
+                continuous_writer.release()
+                
+                if self.enable_h264_conversion:
+                    import threading
+                    old_recording = self.current_recording
+                    threading.Thread(
+                        target=self._convert_to_h264_async,
+                        args=(old_recording,),
+                        daemon=True
+                    ).start()
+                
+                self._save_recording_metadata_sync(self.current_recording, "continuous")
+                
+                continuous_file = self._create_recording_file("continuous")
+                continuous_writer = cv2.VideoWriter(continuous_file, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                self.current_recording = continuous_file
+                frame_count = 0
+        
+        # Cleanup
+        cap.release()
+        if continuous_writer:
+            continuous_writer.release()
+            
+            if self.enable_h264_conversion:
+                import threading
+                threading.Thread(
+                    target=self._convert_to_h264_async,
+                    args=(self.current_recording,),
+                    daemon=True
+                ).start()
+            
+            self._save_recording_metadata_sync(self.current_recording, "continuous")
+        
+        if self.motion_writer:
+            self._stop_motion_recording()
+        
+        return True
         
         while not self.stop_event.is_set():
             ret, frame = cap.read()
