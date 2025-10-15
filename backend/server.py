@@ -321,6 +321,27 @@ class CameraRecorder:
         self.motion_buffer = deque(maxlen=5)  # Temporal filtering
         self._init_motion_detector()
         
+    def _init_motion_detector(self):
+        """Initialize motion detection algorithm based on camera settings"""
+        if self.camera.motion_algorithm == "mog2":
+            self.bg_subtractor = cv2.createBackgroundSubtractorMOG2(
+                history=self.camera.mog2_history,
+                varThreshold=self.camera.mog2_var_threshold,
+                detectShadows=self.camera.detect_shadows
+            )
+            logger.info(f"Initialized MOG2 background subtractor for {self.camera.name}")
+        elif self.camera.motion_algorithm == "knn":
+            self.bg_subtractor = cv2.createBackgroundSubtractorKNN(
+                history=self.camera.mog2_history,
+                dist2Threshold=400.0,
+                detectShadows=self.camera.detect_shadows
+            )
+            logger.info(f"Initialized KNN background subtractor for {self.camera.name}")
+        else:
+            # Basic frame differencing
+            self.bg_subtractor = None
+            logger.info(f"Using basic frame differencing for {self.camera.name}")
+    
     def build_stream_url(self):
         """Build stream URL with authentication"""
         stream_url = self.camera.stream_url
