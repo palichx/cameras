@@ -1453,7 +1453,7 @@ class CameraRecorder:
             self._stop_motion_recording()
     
     def _create_recording_file(self, recording_type: str) -> str:
-        """Create a new recording file path"""
+        """Create a new recording file path with proper extension based on codec"""
         # Use custom storage path if specified, otherwise use default
         if self.camera.storage_path:
             base_path = Path(self.camera.storage_path)
@@ -1464,7 +1464,14 @@ class CameraRecorder:
         camera_dir.mkdir(parents=True, exist_ok=True)
         
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        filename = f"{recording_type}_{timestamp}.mp4"
+        
+        # Choose file extension based on codec
+        if self.camera.codec == 'mjpeg':
+            extension = '.avi'  # AVI is standard for MJPEG
+        else:  # h264, h265
+            extension = '.mp4'  # MP4 for H.264 and H.265
+        
+        filename = f"{recording_type}_{timestamp}{extension}"
         return str(camera_dir / filename)
     
     def _start_motion_recording(self, fps, width, height):
