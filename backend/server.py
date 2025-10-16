@@ -613,24 +613,45 @@ class CameraRecorder:
                 time.sleep(5)
     
     def _record_rtsp(self):
-        """Record from RTSP stream with resilient reconnection"""
+        """Record from RTSP stream with raw H.264 buffering for optimal CPU usage"""
         stream_url = self.build_stream_url()
         
-        # Use new connection method with retry
-        cap, first_frame = self._create_video_capture_with_retry(stream_url, max_retries=self.max_retry_attempts)
-        
-        if cap is None:
-            logger.error(f"Failed to connect to RTSP stream for camera {self.camera.name}")
-            return False
+        # Start ffmpeg process to get raw H.264 stream
+        ffmpeg_cmd = [
+            'ffmpeg',
+            '-rtsp_transport', 'tcp',
+            '-i', stream_url,
+            '-vcodec', 'copy',  # Copy without re-encoding
+            '-f', 'h264',  # Output raw H.264
+            '-',  # Output to stdout
+        ]
         
         try:
-            self._process_frames(cap, source_type="rtsp")
+            ffmpeg_process = subprocess.Popen(
+                ffmpeg_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=10**8
+            )
+            
+            logger.info(f"✅ Started raw H.264 stream from {self.camera.name}")
+            
+            # Also create a separate VideoCapture for periodic frame decoding
+            cap = cv2.VideoCapture(stream_url)
+            if not cap.isOpened():
+                logger.warning(f"Could not open separate stream for frame decoding, will skip motion detection")
+                cap = None
+            
+            self._process_raw_stream(ffmpeg_process, cap)
             return True
+            
         except Exception as e:
-            logger.error(f"Error in RTSP recording: {str(e)}")
+            logger.error(f"Error in RTSP raw recording: {str(e)}")
             return False
         finally:
-            if cap:
+            if 'ffmpeg_process' in locals():
+                ffmpeg_process.kill()
+            if 'cap' in locals() and cap:
                 cap.release()
     
     def _record_http_mjpeg(self):
