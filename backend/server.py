@@ -618,12 +618,13 @@ class CameraRecorder:
         stream_url = self.build_stream_url()
         
         # Start ffmpeg process to get raw H.264 stream
+        # Use mp4 output for better compatibility and add moov atom at start
         ffmpeg_cmd = [
             'ffmpeg',
             '-rtsp_transport', 'tcp',
             '-i', stream_url,
-            '-vcodec', 'copy',  # Copy without re-encoding
-            '-f', 'h264',  # Output raw H.264
+            '-c:v', 'copy',  # Copy without re-encoding  
+            '-f', 'mpegts',  # Use MPEG-TS for streaming (better for pipes)
             '-',  # Output to stdout
         ]
         
