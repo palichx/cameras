@@ -617,7 +617,27 @@ class CameraRecorder:
         """Record from RTSP stream with raw H.264 buffering for optimal CPU usage"""
         stream_url = self.build_stream_url()
         
-        # Start ffmpeg process to get raw H.264 stream
+        # Check if this is actually an HTTP stream (fallback to old method)
+        if stream_url.startswith('http'):
+            logger.info(f"Detected HTTP stream for {self.camera.name}, using legacy VideoCapture method")
+            # Use old method with VideoCapture
+            cap, first_frame = self._create_video_capture_with_retry(stream_url, max_retries=self.max_retry_attempts)
+            
+            if cap is None:
+                logger.error(f"Failed to connect to stream for camera {self.camera.name}")
+                return False
+            
+            try:
+                self._process_frames(cap, source_type="http")
+                return True
+            except Exception as e:
+                logger.error(f"Error in stream recording: {str(e)}")
+                return False
+            finally:
+                if cap:
+                    cap.release()
+        
+        # Start ffmpeg process to get raw H.264 stream (for actual RTSP)
         # Use mp4 output for better compatibility and add moov atom at start
         ffmpeg_cmd = [
             'ffmpeg',
