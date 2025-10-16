@@ -534,6 +534,9 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                   step={0.1}
                   className="mt-2"
                 />
+                <p className="text-xs text-slate-500 mt-1">
+                  <strong>Основной параметр чувствительности.</strong> Низкая (10-40%) - детектирует только крупные и активные движения, подходит для помещений с постоянным освещением. Средняя (50-70%) - универсальная настройка для большинства сценариев. Высокая (80-100%) - детектирует даже малейшие изменения, может давать ложные срабатывания от теней, бликов, насекомых.
+                </p>
               </div>
 
               <div>
@@ -550,7 +553,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                   className="mt-2"
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  Фильтрует кратковременные ложные срабатывания (птицы, тени)
+                  <strong>Фильтр кратковременных движений.</strong> Запись начинается только если движение длится дольше указанного времени. 0.5-1 сек - фильтрует пролетающих птиц, мух, капли дождя. 2-3 сек - только люди и транспорт. 5+ сек - только длительная активность. Помогает избежать ложных срабатываний и экономит место на диске.
                 </p>
               </div>
 
@@ -568,7 +571,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                     onChange={(e) => setFormData({ ...formData, pre_recording_seconds: parseFloat(e.target.value) })}
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    Буфер до движения
+                    <strong>Видео ДО обнаружения.</strong> Система постоянно держит буфер последних N секунд, который добавляется к записи при срабатывании. 3-5 сек - видите что было перед событием. 10+ сек - полный контекст произошедшего. Увеличение повышает нагрузку на RAM.
                   </p>
                 </div>
 
@@ -585,7 +588,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                     onChange={(e) => setFormData({ ...formData, post_recording_seconds: parseFloat(e.target.value) })}
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    После движения
+                    <strong>Продолжение записи ПОСЛЕ движения.</strong> Запись не остановится сразу, а продолжится указанное время. 3-5 сек - стандартно. 10-15 сек - если объекты двигаются с паузами. 30+ сек - для захвата полной ситуации. Длинная постзапись увеличивает размер файлов.
                   </p>
                 </div>
 
@@ -602,7 +605,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                     onChange={(e) => setFormData({ ...formData, motion_cooldown_seconds: parseFloat(e.target.value) })}
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    Между событиями
+                    <strong>Пауза между событиями.</strong> После окончания записи система ждёт указанное время перед следующим срабатыванием. 1-2 сек - быстрая реакция на новые события. 5+ сек - объединяет близкие по времени события в одну запись, уменьшает количество файлов.
                   </p>
                 </div>
               </div>
