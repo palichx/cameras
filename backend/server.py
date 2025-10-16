@@ -685,11 +685,21 @@ class CameraRecorder:
                 
                 # Motion detection with pre/post recording
                 if self.camera.motion_detection:
+                    # OPTIMIZATION: Skip motion detection on some frames during recording to reduce CPU
+                    # When already recording, we don't need to detect on every frame
+                    should_detect = True
+                    if self.motion_state == "recording":
+                        motion_detection_skip = (motion_detection_skip + 1) % 3  # Check every 3rd frame when recording
+                        should_detect = (motion_detection_skip == 0)
+                    
                     self.pre_record_buffer.append(frame.copy())
                     if len(self.pre_record_buffer) > pre_buffer_frames:
                         self.pre_record_buffer.popleft()
                     
-                    motion_detected = self._detect_motion(frame)
+                    if should_detect:
+                        motion_detected = self._detect_motion(frame)
+                    else:
+                        motion_detected = False  # Assume no new motion when skipping detection
                     
                     if motion_detected:
                         current_time = time.time()
