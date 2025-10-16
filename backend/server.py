@@ -364,7 +364,8 @@ class CameraRecorder:
         self.last_frame = None
         
         # Motion detection with pre/post recording
-        self.pre_record_buffer = deque()  # Circular buffer for pre-recording
+        self.pre_record_buffer = deque()  # Circular buffer for pre-recording (decoded frames for snapshot)
+        self.raw_buffer = deque()  # Buffer for raw H.264 packets (for efficient recording)
         self.motion_writer = None
         self.motion_file_path = None
         self.motion_state = "idle"  # idle, recording, cooldown
@@ -373,6 +374,7 @@ class CameraRecorder:
         self.motion_start_time_dt = None  # For Telegram notification
         self.motion_end_time = None
         self.motion_first_detected_time = None  # Track when motion was first detected (before min_duration check)
+        self.decode_interval = 10  # Decode every N-th frame for motion detection (lower = more accurate, higher = less CPU)
         
         # Error handling and reconnection
         self.error_count = 0
