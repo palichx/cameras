@@ -1049,7 +1049,7 @@ class CameraRecorder:
                     if motion_duration >= self.camera.min_motion_duration:
                         # Start recording if not already
                         if self.motion_state == "idle":
-                            self._start_motion_recording(fps, width, height)
+                            self._start_motion_recording(recording_fps, width, height)
                             # Write pre-recorded frames
                             for buffered_frame in self.pre_record_buffer:
                                 if self.motion_writer:
