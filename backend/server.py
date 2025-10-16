@@ -141,6 +141,7 @@ class Camera(BaseModel):
     name: str
     stream_url: str  # Can be RTSP or HTTP URL
     stream_type: str = "rtsp"  # rtsp, http-mjpeg, http-snapshot
+    codec: Optional[str] = None  # h264, h265, mjpeg - auto-detected or manually set
     username: Optional[str] = None
     password: Optional[str] = None
     protocol: str = "tcp"  # tcp or udp (for RTSP only)
