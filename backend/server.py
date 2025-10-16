@@ -617,11 +617,10 @@ class CameraRecorder:
                 time.sleep(5)
     
     def _record_rtsp(self):
-        """Record from RTSP stream with raw H.264 buffering for optimal CPU usage"""
+        """Record from RTSP stream with raw stream buffering for optimal CPU usage"""
         stream_url = self.build_stream_url()
         
-        # Check stream type from camera model, not from URL
-        # Many modern cameras use HTTP URLs even for "RTSP-like" streams
+        # Check stream type from camera model
         if self.camera.stream_type in ["http-mjpeg", "http-snapshot"]:
             logger.info(f"Camera {self.camera.name} is HTTP type ({self.camera.stream_type}), using legacy VideoCapture method")
             # Use old method with VideoCapture
@@ -641,49 +640,68 @@ class CameraRecorder:
                 if cap:
                     cap.release()
         
-        # For actual RTSP streams (even if URL might be HTTP-based)
-        # Start ffmpeg process to get raw stream
-        # Use mp4 output for better compatibility and add moov atom at start
-        ffmpeg_cmd = [
+        # For RTSP/stream types: use dual ffmpeg approach
+        # ffmpeg process 1: for recording (copy stream)
+        # ffmpeg process 2: for decoding frames (for motion detection)
+        
+        # Start recording ffmpeg (raw copy)
+        record_cmd = [
             'ffmpeg',
             '-i', stream_url,
-            '-c:v', 'copy',  # Copy without re-encoding  
-            '-f', 'mpegts',  # Use MPEG-TS for streaming (better for pipes)
-            '-',  # Output to stdout
+            '-c:v', 'copy',
+            '-f', 'mpegts',
+            '-',
         ]
         
         # Add RTSP-specific options only for actual rtsp:// URLs
         if stream_url.startswith('rtsp://'):
-            ffmpeg_cmd.insert(1, '-rtsp_transport')
-            ffmpeg_cmd.insert(2, 'tcp')
+            record_cmd.insert(1, '-rtsp_transport')
+            record_cmd.insert(2, 'tcp')
+        
+        # Start decoding ffmpeg (for motion detection and live stream)
+        decode_cmd = [
+            'ffmpeg',
+            '-i', stream_url,
+            '-vf', 'fps=5',  # Decode at 5 fps for detection
+            '-f', 'image2pipe',
+            '-pix_fmt', 'bgr24',
+            '-vcodec', 'rawvideo',
+            '-',
+        ]
+        
+        if stream_url.startswith('rtsp://'):
+            decode_cmd.insert(1, '-rtsp_transport')
+            decode_cmd.insert(2, 'tcp')
         
         try:
-            ffmpeg_process = subprocess.Popen(
-                ffmpeg_cmd,
+            # Start both processes
+            record_process = subprocess.Popen(
+                record_cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 bufsize=10**8
             )
             
-            logger.info(f"✅ Started raw stream from {self.camera.name} (type: {self.camera.stream_type})")
+            decode_process = subprocess.Popen(
+                decode_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=10**8
+            )
             
-            # Also create a separate VideoCapture for periodic frame decoding
-            cap = cv2.VideoCapture(stream_url)
-            if not cap.isOpened():
-                logger.warning(f"Could not open separate stream for frame decoding, will skip motion detection")
-                cap = None
+            logger.info(f"✅ Started dual ffmpeg streams for {self.camera.name} (type: {self.camera.stream_type})")
             
-            self._process_raw_stream(ffmpeg_process, cap)
+            self._process_dual_ffmpeg_streams(record_process, decode_process)
             return True
             
         except Exception as e:
-            logger.error(f"Error in raw stream recording: {str(e)}")
+            logger.error(f"Error in ffmpeg recording: {str(e)}")
             return False
         finally:
-            if 'ffmpeg_process' in locals():
-                ffmpeg_process.kill()
-            if 'cap' in locals() and cap:
-                cap.release()
+            if 'record_process' in locals():
+                record_process.kill()
+            if 'decode_process' in locals():
+                decode_process.kill()
     
     def _process_raw_stream(self, ffmpeg_process, cap_for_detection=None):
         """Process raw H.264 stream with periodic frame decoding for motion detection"""
