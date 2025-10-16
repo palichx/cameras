@@ -680,7 +680,9 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                         value={formData.motion_threshold}
                         onChange={(e) => setFormData({ ...formData, motion_threshold: parseInt(e.target.value) })}
                       />
-                      <p className="text-xs text-slate-500 mt-1">Чем выше, тем меньше чувствительность</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        <strong>Порог разности между кадрами (только для базового алгоритма).</strong> 5-15 - очень чувствительный, детектирует малейшие изменения, включая шумы камеры. 25 (стандарт) - универсальная настройка. 50-100 - низкая чувствительность, только явные движения. Чем выше значение, тем меньше ложных срабатываний от освещения.
+                      </p>
                     </div>
                   )}
 
@@ -698,13 +700,43 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                             value={formData.mog2_history}
                             onChange={(e) => setFormData({ ...formData, mog2_history: parseInt(e.target.value) })}
                           />
-                          <p className="text-xs text-slate-500 mt-1">Для обучения фона</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            <strong>Количество последних кадров для обучения модели фона.</strong> 200-300 - быстрая адаптация к изменениям (облака, тени), но может пропустить медленные объекты. 500 (стандарт) - баланс между скоростью адаптации и стабильностью. 800-1000 - медленная адаптация, лучше для статичных сцен, но дольше привыкает к изменениям освещения. Больше значение = больше RAM.
+                          </p>
                         </div>
 
                         <div>
                           <Label htmlFor="mog2_var_threshold">Порог переднего плана</Label>
                           <Input
                             id="mog2_var_threshold"
+                            type="number"
+                            min="8"
+                            max="50"
+                            value={formData.mog2_var_threshold}
+                            onChange={(e) => setFormData({ ...formData, mog2_var_threshold: parseInt(e.target.value) })}
+                          />
+                          <p className="text-xs text-slate-500 mt-1">
+                            <strong>Порог для определения переднего плана (движущихся объектов).</strong> 8-12 - очень чувствительный, детектирует тонкие изменения, больше ложных срабатываний от шумов видео. 16-20 (стандарт) - оптимальная чувствительность для большинства камер. 25-50 - низкая чувствительность, игнорирует мелкие изменения и шумы сжатия, подходит для низкокачественных камер или статичного видео.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="detect_shadows" className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="detect_shadows"
+                            checked={formData.detect_shadows}
+                            onChange={(e) => setFormData({ ...formData, detect_shadows: e.target.checked })}
+                          />
+                          Обнаружение и игнорирование теней
+                        </Label>
+                        <p className="text-xs text-slate-500 mt-1">
+                          <strong>Фильтр теней для MOG2/KNN.</strong> Включено (рекомендуется) - алгоритм распознаёт тени и не считает их движением, уменьшает ложные срабатывания на улице от облаков, деревьев, проезжающих машин. Выключено - тени будут детектироваться как движение, может быть полезно если нужно реагировать на любые изменения. Работает только с MOG2 и KNN алгоритмами.
+                        </p>
+                      </div>
+                    </>
+                  )}
                             type="number"
                             min="8"
                             max="50"
