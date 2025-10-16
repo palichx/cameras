@@ -717,11 +717,12 @@ class CameraRecorder:
         chunks_per_frame = 8
         pre_buffer_chunks = int(chunks_per_frame * 10 * self.camera.pre_recording_seconds)
         
-        # For decoding raw video frames from ffmpeg
-        # Assume 640x480 for detection (can adjust based on actual stream)
-        frame_width = 640
-        frame_height = 480
+        # Get frame dimensions from camera or use defaults
+        frame_width = self.camera.resolution_width or 640
+        frame_height = self.camera.resolution_height or 480
         frame_size = frame_width * frame_height * 3  # BGR24
+        
+        logger.info(f"Using frame size: {frame_width}x{frame_height} ({frame_size} bytes) for {self.camera.name}")
         
         try:
             while not self.stop_event.is_set():
