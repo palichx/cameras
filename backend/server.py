@@ -175,6 +175,7 @@ class CameraCreate(BaseModel):
     name: str
     stream_url: str
     stream_type: str = "rtsp"
+    codec: Optional[str] = None  # h264, h265, mjpeg - optional manual override
     username: Optional[str] = None
     password: Optional[str] = None
     protocol: str = "tcp"
