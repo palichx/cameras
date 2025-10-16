@@ -204,6 +204,7 @@ class CameraUpdate(BaseModel):
     name: Optional[str] = None
     stream_url: Optional[str] = None
     stream_type: Optional[str] = None
+    codec: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
     protocol: Optional[str] = None
