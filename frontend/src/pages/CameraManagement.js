@@ -737,29 +737,6 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                       </div>
                     </>
                   )}
-                            type="number"
-                            min="8"
-                            max="50"
-                            value={formData.mog2_var_threshold}
-                            onChange={(e) => setFormData({ ...formData, mog2_var_threshold: parseInt(e.target.value) })}
-                          />
-                          <p className="text-xs text-slate-500 mt-1">Чувствительность MOG2</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="detect_shadows">Детекция теней</Label>
-                          <p className="text-xs text-slate-500">Игнорировать тени объектов</p>
-                        </div>
-                        <Switch
-                          id="detect_shadows"
-                          checked={formData.detect_shadows}
-                          onCheckedChange={(checked) => setFormData({ ...formData, detect_shadows: checked })}
-                        />
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
 
