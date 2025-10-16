@@ -688,17 +688,21 @@ class CameraRecorder:
                 
                 # Periodic motion detection (every N chunks = ~every decode_interval frames)
                 frame_count += 1
-                should_decode = (frame_count % (chunks_per_frame * self.decode_interval) == 0)
+                should_decode_for_motion = (frame_count % (chunks_per_frame * self.decode_interval) == 0)
+                should_decode_for_stream = (frame_count % (chunks_per_frame * 2) == 0)  # Update last_frame more often for live stream
                 
-                if should_decode and cap_for_detection and self.camera.motion_detection:
-                    # Decode one frame for motion detection
+                # Decode frame for live stream and/or motion detection
+                if cap_for_detection and (should_decode_for_stream or (should_decode_for_motion and self.camera.motion_detection)):
+                    # Decode one frame
                     ret, frame = cap_for_detection.read()
                     
                     if ret and frame is not None:
-                        self.last_frame = frame
+                        self.last_frame = frame  # Update for live stream endpoint
                         
-                        # Detect motion on this frame
-                        motion_detected = self._detect_motion(frame)
+                        # Only run motion detection if it's time
+                        if should_decode_for_motion and self.camera.motion_detection:
+                            # Detect motion on this frame
+                            motion_detected = self._detect_motion(frame)
                         
                         if motion_detected:
                             current_time = time.time()
