@@ -646,15 +646,17 @@ class CameraRecorder:
                 return False
             
             fps = 20  # Assume 20 fps for HTTP streams
+            recording_fps = 10  # OPTIMIZATION: Record at lower FPS to reduce CPU (50% reduction)
             width, height = None, None
             
-            pre_buffer_frames = int(fps * self.camera.pre_recording_seconds)
-            post_buffer_frames = int(fps * self.camera.post_recording_seconds)
-            cooldown_frames = int(fps * self.camera.motion_cooldown_seconds)
+            pre_buffer_frames = int(recording_fps * self.camera.pre_recording_seconds)
+            post_buffer_frames = int(recording_fps * self.camera.post_recording_seconds)
+            cooldown_frames = int(recording_fps * self.camera.motion_cooldown_seconds)
             
             continuous_writer = None
             frame_count = 0
             frames_since_motion = 0
+            motion_detection_skip = 0  # OPTIMIZATION: Skip frames for motion detection
             
             while not self.stop_event.is_set():
                 frame = self._get_http_mjpeg_frame(stream)
