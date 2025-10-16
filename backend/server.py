@@ -617,9 +617,10 @@ class CameraRecorder:
         """Record from RTSP stream with raw H.264 buffering for optimal CPU usage"""
         stream_url = self.build_stream_url()
         
-        # Check if this is actually an HTTP stream (fallback to old method)
-        if stream_url.startswith('http'):
-            logger.info(f"Detected HTTP stream for {self.camera.name}, using legacy VideoCapture method")
+        # Check stream type from camera model, not from URL
+        # Many modern cameras use HTTP URLs even for "RTSP-like" streams
+        if self.camera.stream_type in ["http-mjpeg", "http-snapshot"]:
+            logger.info(f"Camera {self.camera.name} is HTTP type ({self.camera.stream_type}), using legacy VideoCapture method")
             # Use old method with VideoCapture
             cap, first_frame = self._create_video_capture_with_retry(stream_url, max_retries=self.max_retry_attempts)
             
@@ -637,16 +638,21 @@ class CameraRecorder:
                 if cap:
                     cap.release()
         
-        # Start ffmpeg process to get raw H.264 stream (for actual RTSP)
+        # For actual RTSP streams (even if URL might be HTTP-based)
+        # Start ffmpeg process to get raw stream
         # Use mp4 output for better compatibility and add moov atom at start
         ffmpeg_cmd = [
             'ffmpeg',
-            '-rtsp_transport', 'tcp',
             '-i', stream_url,
             '-c:v', 'copy',  # Copy without re-encoding  
             '-f', 'mpegts',  # Use MPEG-TS for streaming (better for pipes)
             '-',  # Output to stdout
         ]
+        
+        # Add RTSP-specific options only for actual rtsp:// URLs
+        if stream_url.startswith('rtsp://'):
+            ffmpeg_cmd.insert(1, '-rtsp_transport')
+            ffmpeg_cmd.insert(2, 'tcp')
         
         try:
             ffmpeg_process = subprocess.Popen(
@@ -656,7 +662,7 @@ class CameraRecorder:
                 bufsize=10**8
             )
             
-            logger.info(f"✅ Started raw H.264 stream from {self.camera.name}")
+            logger.info(f"✅ Started raw stream from {self.camera.name} (type: {self.camera.stream_type})")
             
             # Also create a separate VideoCapture for periodic frame decoding
             cap = cv2.VideoCapture(stream_url)
@@ -668,7 +674,7 @@ class CameraRecorder:
             return True
             
         except Exception as e:
-            logger.error(f"Error in RTSP raw recording: {str(e)}")
+            logger.error(f"Error in raw stream recording: {str(e)}")
             return False
         finally:
             if 'ffmpeg_process' in locals():
