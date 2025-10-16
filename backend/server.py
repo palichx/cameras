@@ -719,11 +719,14 @@ class CameraRecorder:
                                     self.motion_file_path = motion_file_path
                                     
                                     # Start ffmpeg process to write raw H.264 to file
+                                    # Add fps parameter for proper MP4 container creation
                                     record_cmd = [
                                         'ffmpeg',
                                         '-f', 'h264',
+                                        '-r', '20',  # Assume 20 fps from camera
                                         '-i', '-',  # Read from stdin
-                                        '-vcodec', 'copy',  # Copy without re-encoding
+                                        '-c:v', 'copy',  # Copy without re-encoding
+                                        '-movflags', '+faststart',  # Optimize for web streaming
                                         '-y',
                                         motion_file_path
                                     ]
