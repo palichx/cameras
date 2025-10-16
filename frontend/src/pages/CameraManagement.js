@@ -627,7 +627,7 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                       <option value="basic">Базовый - Быстрый</option>
                     </select>
                     <p className="text-xs text-slate-500 mt-1">
-                      MOG2 лучше справляется с освещением и тенями
+                      <strong>Метод обнаружения движения.</strong> MOG2 (рекомендуется) - адаптивный алгоритм, обучается на фоне, игнорирует тени и изменения освещения, лучший для уличных камер. KNN - похож на MOG2, иногда точнее в сложных условиях. Базовый - простое сравнение кадров, быстрый но чувствителен к освещению, подходит для помещений со стабильным светом.
                     </p>
                   </div>
 
@@ -643,7 +643,9 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                         value={formData.min_object_area}
                         onChange={(e) => setFormData({ ...formData, min_object_area: parseInt(e.target.value) })}
                       />
-                      <p className="text-xs text-slate-500 mt-1">Игнорировать мелкие объекты</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        <strong>Фильтр по площади движущегося объекта.</strong> 100-300px - детектирует мелкие объекты (кошки, мелкие птицы), может давать ложные срабатывания от листвы. 500-1000px (стандарт) - люди, собаки, транспорт на среднем расстоянии. 2000-5000px - только крупные объекты, игнорирует мелкие помехи. Зависит от расстояния камеры до объекта и разрешения.
+                      </p>
                     </div>
 
                     <div>
@@ -661,7 +663,9 @@ const CameraDialog = ({ isOpen, onClose, onSuccess, camera = null }) => {
                           setFormData({ ...formData, blur_size: val });
                         }}
                       />
-                      <p className="text-xs text-slate-500 mt-1">Только нечётные числа</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        <strong>Гауссово размытие перед анализом (только для базового алгоритма).</strong> 5-11px - минимальное, сохраняет детали. 21px (стандарт) - баланс между шумоподавлением и чёткостью. 31-51px - сильное размытие, убирает мелкие помехи но может пропустить небольшие объекты. Только нечётные числа.
+                      </p>
                     </div>
                   </div>
 
