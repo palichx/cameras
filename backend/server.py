@@ -690,6 +690,7 @@ class CameraRecorder:
                 frame_count += 1
                 should_decode_for_motion = (frame_count % (chunks_per_frame * self.decode_interval) == 0)
                 should_decode_for_stream = (frame_count % (chunks_per_frame * 2) == 0)  # Update last_frame more often for live stream
+                motion_detected = False  # Initialize
                 
                 # Decode frame for live stream and/or motion detection
                 if cap_for_detection and (should_decode_for_stream or (should_decode_for_motion and self.camera.motion_detection)):
