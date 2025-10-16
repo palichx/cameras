@@ -1019,9 +1019,19 @@ class CameraRecorder:
             if continuous_writer:
                 continuous_writer.write(frame)
             
-            # Motion detection (adaptive processing)
+            # Motion detection (adaptive processing with frame skipping)
             if self.camera.motion_detection and self._should_process_frame_for_motion():
-                motion_detected = self._detect_motion(frame)
+                # OPTIMIZATION: Skip motion detection on some frames during recording to reduce CPU
+                # When already recording, we don't need to detect on every frame
+                should_detect = True
+                if self.motion_state == "recording":
+                    motion_detection_skip = (motion_detection_skip + 1) % 3  # Check every 3rd frame when recording
+                    should_detect = (motion_detection_skip == 0)
+                
+                if should_detect:
+                    motion_detected = self._detect_motion(frame)
+                else:
+                    motion_detected = False  # Assume no new motion when skipping detection
                 
                 if motion_detected:
                     current_time = time.time()
