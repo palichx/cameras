@@ -945,24 +945,26 @@ class CameraRecorder:
     def _process_frames(self, cap, source_type="rtsp"):
         """Process frames from video capture with pre/post recording buffer and resilient reconnection"""
         fps = int(cap.get(cv2.CAP_PROP_FPS)) or 20
+        recording_fps = 10  # OPTIMIZATION: Record at lower FPS (50% CPU reduction)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
-        # Calculate buffer size for pre-recording
-        pre_buffer_frames = int(fps * self.camera.pre_recording_seconds)
-        post_buffer_frames = int(fps * self.camera.post_recording_seconds)
-        cooldown_frames = int(fps * self.camera.motion_cooldown_seconds)
+        # Calculate buffer size for pre-recording (use recording_fps)
+        pre_buffer_frames = int(recording_fps * self.camera.pre_recording_seconds)
+        post_buffer_frames = int(recording_fps * self.camera.post_recording_seconds)
+        cooldown_frames = int(recording_fps * self.camera.motion_cooldown_seconds)
         
         continuous_writer = None
         frame_count = 0
         frames_since_motion = 0
         consecutive_read_failures = 0
         max_read_failures = 30  # Reconnect after 30 failed reads
+        motion_detection_skip = 0  # OPTIMIZATION: Skip frames for motion detection
         
         if self.camera.continuous_recording:
             continuous_file = self._create_recording_file("continuous")
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            continuous_writer = cv2.VideoWriter(continuous_file, fourcc, fps, (width, height))
+            continuous_writer = cv2.VideoWriter(continuous_file, fourcc, recording_fps, (width, height))
             self.current_recording = continuous_file
         
         while not self.stop_event.is_set():
@@ -1002,6 +1004,11 @@ class CameraRecorder:
             self.last_successful_frame = time.time()
             self.last_frame = frame
             self.frame_counter += 1
+            
+            # OPTIMIZATION: Skip every other frame to reduce CPU by ~50%
+            frame_count += 1
+            if frame_count % 2 != 0:  # Process only even frames
+                continue
             
             # Add to pre-record buffer
             if len(self.pre_record_buffer) >= pre_buffer_frames:
