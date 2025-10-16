@@ -664,6 +664,11 @@ class CameraRecorder:
                 if frame is None:
                     break
                 
+                # OPTIMIZATION: Skip every other frame to reduce CPU by ~50%
+                frame_count += 1
+                if frame_count % 2 != 0:  # Process only even frames
+                    continue
+                
                 # Initialize dimensions on first frame
                 if width is None:
                     height, width = frame.shape[:2]
@@ -671,7 +676,7 @@ class CameraRecorder:
                     if self.camera.continuous_recording:
                         continuous_file = self._create_recording_file("continuous")
                         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                        continuous_writer = cv2.VideoWriter(continuous_file, fourcc, fps, (width, height))
+                        continuous_writer = cv2.VideoWriter(continuous_file, fourcc, recording_fps, (width, height))
                         self.current_recording = continuous_file
                 
                 # Continuous recording
