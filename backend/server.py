@@ -655,6 +655,144 @@ class CameraRecorder:
             if 'cap' in locals() and cap:
                 cap.release()
     
+    def _process_raw_stream(self, ffmpeg_process, cap_for_detection=None):
+        """Process raw H.264 stream with periodic frame decoding for motion detection"""
+        chunk_size = 4096  # Read in 4KB chunks
+        frame_count = 0
+        frames_since_motion = 0
+        motion_recording_process = None
+        motion_file_path = None
+        
+        # Calculate buffer sizes (in number of chunks, not frames)
+        # Assume ~30KB per frame at 1080p, so ~8 chunks per frame
+        chunks_per_frame = 8
+        pre_buffer_chunks = int(chunks_per_frame * 10 * self.camera.pre_recording_seconds)  # 10 fps estimate
+        
+        try:
+            while not self.stop_event.is_set():
+                # Read raw H.264 chunk
+                chunk = ffmpeg_process.stdout.read(chunk_size)
+                
+                if not chunk:
+                    logger.warning(f"ffmpeg stream ended for {self.camera.name}")
+                    break
+                
+                # Buffer raw chunks for pre-recording
+                self.raw_buffer.append(chunk)
+                if len(self.raw_buffer) > pre_buffer_chunks:
+                    self.raw_buffer.popleft()
+                
+                # Write to continuous recording if enabled
+                # TODO: Implement continuous recording with raw stream
+                
+                # Periodic motion detection (every N chunks = ~every decode_interval frames)
+                frame_count += 1
+                should_decode = (frame_count % (chunks_per_frame * self.decode_interval) == 0)
+                
+                if should_decode and cap_for_detection and self.camera.motion_detection:
+                    # Decode one frame for motion detection
+                    ret, frame = cap_for_detection.read()
+                    
+                    if ret and frame is not None:
+                        self.last_frame = frame
+                        
+                        # Detect motion on this frame
+                        motion_detected = self._detect_motion(frame)
+                        
+                        if motion_detected:
+                            current_time = time.time()
+                            self.last_motion_time = current_time
+                            frames_since_motion = 0
+                            
+                            # Track when motion was first detected
+                            if self.motion_first_detected_time is None:
+                                self.motion_first_detected_time = current_time
+                            
+                            # Calculate motion duration
+                            motion_duration = current_time - self.motion_first_detected_time
+                            
+                            # Only trigger recording if motion duration >= min_motion_duration
+                            if motion_duration >= self.camera.min_motion_duration:
+                                if self.motion_state == "idle":
+                                    # Start recording raw stream
+                                    motion_file_path = self._create_recording_file("motion")
+                                    self.motion_file_path = motion_file_path
+                                    
+                                    # Start ffmpeg process to write raw H.264 to file
+                                    record_cmd = [
+                                        'ffmpeg',
+                                        '-f', 'h264',
+                                        '-i', '-',  # Read from stdin
+                                        '-vcodec', 'copy',  # Copy without re-encoding
+                                        '-y',
+                                        motion_file_path
+                                    ]
+                                    
+                                    motion_recording_process = subprocess.Popen(
+                                        record_cmd,
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE
+                                    )
+                                    
+                                    # Write buffered pre-recording chunks
+                                    for buffered_chunk in self.raw_buffer:
+                                        motion_recording_process.stdin.write(buffered_chunk)
+                                    
+                                    self.motion_state = "recording"
+                                    self.motion_start_time = time.time()
+                                    self.motion_start_time_dt = datetime.now(timezone.utc)
+                                    
+                                    logger.info(f"Motion detected (duration: {motion_duration:.1f}s) - wrote {len(self.raw_buffer)} raw chunks")
+                                    
+                                    # Save motion event snapshot
+                                    self._save_motion_event_sync(frame)
+                                
+                                elif self.motion_state == "cooldown":
+                                    self.motion_state = "recording"
+                                    logger.info("Motion resumed during cooldown")
+                        else:
+                            frames_since_motion += 1
+                            
+                            # Reset motion first detected time when no motion
+                            if self.motion_first_detected_time is not None:
+                                motion_duration = time.time() - self.motion_first_detected_time
+                                if motion_duration < self.camera.min_motion_duration:
+                                    logger.debug(f"Motion too short ({motion_duration:.1f}s < {self.camera.min_motion_duration}s), ignoring")
+                                self.motion_first_detected_time = None
+                
+                # Write chunk to motion recording if active
+                if motion_recording_process and self.motion_state == "recording":
+                    try:
+                        motion_recording_process.stdin.write(chunk)
+                    except:
+                        pass
+                
+                # Check if should stop recording (post-recording logic)
+                if self.motion_state == "recording" and frames_since_motion > (chunks_per_frame * 10 * self.camera.post_recording_seconds):
+                    # Stop recording
+                    if motion_recording_process:
+                        motion_recording_process.stdin.close()
+                        motion_recording_process.wait()
+                        motion_recording_process = None
+                    
+                    self.motion_state = "cooldown"
+                    logger.info(f"Motion ended - saved to {motion_file_path}")
+                    
+                    # Save to database
+                    self._save_recording_to_db_sync(motion_file_path, "motion")
+                
+                elif self.motion_state == "cooldown" and frames_since_motion > (chunks_per_frame * 10 * self.camera.motion_cooldown_seconds):
+                    self.motion_state = "idle"
+        
+        except Exception as e:
+            logger.error(f"Error in raw stream processing: {str(e)}")
+        finally:
+            if motion_recording_process:
+                motion_recording_process.stdin.close()
+                motion_recording_process.wait()
+    
+    
     def _record_http_mjpeg(self):
         """Record from HTTP MJPEG stream with pre/post recording"""
         stream_url = self.build_stream_url()
