@@ -2121,6 +2121,57 @@ def detect_codec(stream_url: str, username: Optional[str] = None, password: Opti
         logger.error(f"Error detecting codec: {str(e)}")
         return None
 
+def detect_resolution(stream_url: str, username: Optional[str] = None, password: Optional[str] = None, timeout: int = 15) -> tuple:
+    """
+    Detect video resolution using ffprobe
+    Returns: (width, height) or (None, None) if detection failed
+    """
+    try:
+        # Build stream URL with auth if provided
+        if username and password and not stream_url.startswith('http'):
+            if '://' in stream_url:
+                protocol, rest = stream_url.split('://', 1)
+                stream_url_with_auth = f"{protocol}://{username}:{password}@{rest}"
+            else:
+                stream_url_with_auth = stream_url
+        else:
+            stream_url_with_auth = stream_url
+        
+        # Run ffprobe to get width and height
+        cmd = [
+            'ffprobe',
+            '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=width,height',
+            '-of', 'csv=p=0',
+            '-timeout', str(timeout * 1000000),
+            stream_url_with_auth
+        ]
+        
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            output = result.stdout.strip()
+            if ',' in output:
+                width, height = output.split(',')
+                return (int(width), int(height))
+        
+        logger.error(f"Could not detect resolution: {result.stderr}")
+        return (None, None)
+            
+    except subprocess.TimeoutExpired:
+        logger.error(f"Timeout while detecting resolution for {stream_url}")
+        return (None, None)
+    except Exception as e:
+        logger.error(f"Error detecting resolution: {str(e)}")
+        return (None, None)
+
 # Camera Management
 @api_router.post("/cameras", response_model=Camera)
 async def create_camera(camera_input: CameraCreate, background_tasks: BackgroundTasks):
