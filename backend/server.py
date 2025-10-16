@@ -1906,9 +1906,93 @@ async def test_player():
     with open("/app/backend/test_video_player.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+# Helper function to detect video codec
+def detect_codec(stream_url: str, username: Optional[str] = None, password: Optional[str] = None, timeout: int = 15) -> Optional[str]:
+    """
+    Detect video codec using ffprobe
+    Returns: 'h264', 'h265', 'mjpeg', or None if detection failed
+    """
+    try:
+        # Build stream URL with auth if provided
+        if username and password and not stream_url.startswith('http'):
+            # For RTSP
+            if '://' in stream_url:
+                protocol, rest = stream_url.split('://', 1)
+                stream_url_with_auth = f"{protocol}://{username}:{password}@{rest}"
+            else:
+                stream_url_with_auth = stream_url
+        else:
+            stream_url_with_auth = stream_url
+        
+        # Run ffprobe
+        cmd = [
+            'ffprobe',
+            '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=codec_name',
+            '-of', 'default=noprint_wrappers=1:nokey=1',
+            '-timeout', str(timeout * 1000000),  # microseconds
+            stream_url_with_auth
+        ]
+        
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            codec = result.stdout.strip().lower()
+            
+            # Map codec names
+            if codec in ['h264', 'avc']:
+                return 'h264'
+            elif codec in ['h265', 'hevc']:
+                return 'h265'
+            elif codec in ['mjpeg', 'jpeg']:
+                return 'mjpeg'
+            else:
+                logger.warning(f"Unknown codec detected: {codec}")
+                return None
+        else:
+            logger.error(f"ffprobe failed: {result.stderr}")
+            return None
+            
+    except subprocess.TimeoutExpired:
+        logger.error(f"Timeout while detecting codec for {stream_url}")
+        return None
+    except Exception as e:
+        logger.error(f"Error detecting codec: {str(e)}")
+        return None
+
 # Camera Management
 @api_router.post("/cameras", response_model=Camera)
 async def create_camera(camera_input: CameraCreate, background_tasks: BackgroundTasks):
+    # Auto-detect codec if not provided
+    if not camera_input.codec:
+        logger.info(f"Auto-detecting codec for {camera_input.name}...")
+        detected_codec = detect_codec(
+            camera_input.stream_url,
+            camera_input.username,
+            camera_input.password
+        )
+        
+        if detected_codec:
+            camera_input.codec = detected_codec
+            logger.info(f"✅ Detected codec: {detected_codec}")
+        else:
+            # Codec detection failed - return error asking for manual input
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "codec_detection_failed",
+                    "message": "Could not auto-detect video codec. Please specify codec manually (h264, h265, or mjpeg).",
+                    "supported_codecs": ["h264", "h265", "mjpeg"]
+                }
+            )
+    
     camera_dict = camera_input.model_dump()
     camera = Camera(**camera_dict)
     
