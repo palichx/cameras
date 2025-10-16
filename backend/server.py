@@ -753,17 +753,16 @@ class CameraRecorder:
                                     motion_file_path = self._create_recording_file("motion")
                                     self.motion_file_path = motion_file_path
                                     
-                                    # Start ffmpeg process to write stream to MP4 file
-                                    # Input is MPEG-TS, output is MP4 with H.264
-                                    record_cmd = [
-                                        'ffmpeg',
-                                        '-f', 'mpegts',
-                                        '-i', '-',  # Read from stdin
-                                        '-c:v', 'copy',  # Copy without re-encoding
-                                        '-movflags', '+faststart',  # Optimize for web streaming
-                                        '-y',
-                                        motion_file_path
-                                    ]
+                                    # Build ffmpeg command based on codec and container
+                                    record_cmd = ['ffmpeg', '-f', 'mpegts', '-i', '-', '-c:v', 'copy']
+                                    
+                                    # Add format-specific options
+                                    if motion_file_path.endswith('.mp4'):
+                                        # MP4 container (H.264, H.265)
+                                        record_cmd.extend(['-movflags', '+faststart'])  # Optimize for web streaming
+                                    # AVI doesn't need special flags
+                                    
+                                    record_cmd.extend(['-y', motion_file_path])
                                     
                                     motion_recording_process = subprocess.Popen(
                                         record_cmd,
