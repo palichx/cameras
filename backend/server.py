@@ -1433,11 +1433,20 @@ class CameraRecorder:
             # OPTIMIZATION 1: Resize frame for motion detection (4x less pixels to process)
             small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_NEAREST)
             
-            # Apply background subtraction
-            fg_mask = self.bg_subtractor.apply(small_frame)
+            # Apply background subtraction with learning rate
+            # learningRate = -1 (automatic), 0 (no learning), 0.001-0.01 (slow learning for static scenes)
+            # For video streams, use small learning rate to adapt slowly and reduce false positives
+            learning_rate = 0.001 if hasattr(self, 'motion_buffer') and len(self.motion_buffer) > 10 else -1
+            fg_mask = self.bg_subtractor.apply(small_frame, learningRate=learning_rate)
             
             # OPTIMIZATION 2: Simple threshold instead of morphological operations for speed
-            _, fg_mask = cv2.threshold(fg_mask, 200, 255, cv2.THRESH_BINARY)
+            # Increase threshold to reduce noise sensitivity (200 -> 220)
+            _, fg_mask = cv2.threshold(fg_mask, 220, 255, cv2.THRESH_BINARY)
+            
+            # Apply morphological operations to reduce noise (remove small artifacts)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel)  # Remove small white noise
+            fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, kernel)  # Fill small holes
             
             # Apply exclusion zones mask if specified
             if self.camera.excluded_zones:
@@ -1492,14 +1501,18 @@ class CameraRecorder:
             motion_pixels = cv2.countNonZero(fg_mask)
             
             # Convert area threshold to match resized frame (4x smaller)
-            adjusted_threshold = self.camera.min_object_area / 4
+            # Also apply motion_sensitivity: lower sensitivity = higher threshold
+            base_threshold = self.camera.min_object_area / 4
+            sensitivity_multiplier = 2.0 - self.camera.motion_sensitivity  # 0.5 sens -> 1.5x threshold, 1.0 sens -> 1.0x threshold
+            adjusted_threshold = base_threshold * sensitivity_multiplier
             
-            # Temporal filtering with simpler logic
+            # Temporal filtering with stricter requirements
             motion_detected = motion_pixels > adjusted_threshold
             self.motion_buffer.append(1 if motion_detected else 0)
             
-            # Require motion in at least 3 of last 5 frames (reduces false positives)
-            temporal_motion = sum(self.motion_buffer) >= 3
+            # Require motion in at least 4 of last 5 frames (stricter than 3/5)
+            # This reduces false positives from video compression artifacts
+            temporal_motion = sum(self.motion_buffer) >= 4
             
             return temporal_motion
             
