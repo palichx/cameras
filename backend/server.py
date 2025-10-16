@@ -2179,7 +2179,7 @@ def detect_resolution(stream_url: str, username: Optional[str] = None, password:
 async def create_camera(camera_input: CameraCreate, background_tasks: BackgroundTasks):
     # Auto-detect codec if not provided
     if not camera_input.codec:
-        logger.info(f"Auto-detecting codec for {camera_input.name}...")
+        logger.info(f"Auto-detecting codec and resolution for {camera_input.name}...")
         detected_codec = detect_codec(
             camera_input.stream_url,
             camera_input.username,
@@ -2199,6 +2199,20 @@ async def create_camera(camera_input: CameraCreate, background_tasks: Background
                     "supported_codecs": ["h264", "h265", "mjpeg"]
                 }
             )
+    
+    # Auto-detect resolution
+    width, height = detect_resolution(
+        camera_input.stream_url,
+        camera_input.username,
+        camera_input.password
+    )
+    
+    if width and height:
+        camera_input.resolution_width = width
+        camera_input.resolution_height = height
+        logger.info(f"✅ Detected resolution: {width}x{height}")
+    else:
+        logger.warning(f"⚠️ Could not detect resolution, will use defaults")
     
     camera_dict = camera_input.model_dump()
     camera = Camera(**camera_dict)
